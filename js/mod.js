@@ -13,16 +13,24 @@ let modInfo = {
 
 // Set your version in num and name
 let VERSION = {
-	num: "0.0.2",
-	name: "Surprise Update",
+	num: "0.0.3",
+	name: "idk how to name this",
 }
 
 let changelog = `<h1>Changelog:</h1><br>
+	<h3>v0.0.3</h3><br>
+		- New update<br>
+		- Added more contentbr>
+		- Endgame: 1e75 studs.
 	<h3>v0.0.2</h3><br>
 		- New update<br>
 		- Ngl I haven't planned to make this update at all until the day before the update released<br>
 		- Added 1 Layer<br>
 		- Endgame: 1 decillion studs.
+	<h3>v0.0.1</h3><br>
+		- Game release<br>
+		- Added 2 layers<br>
+		- Endgame: 1 billion studs.
 `
 
 let winText = `Congratulations! You have reached the end and beaten this game, but for now...`
