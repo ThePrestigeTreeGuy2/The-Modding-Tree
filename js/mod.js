@@ -55,13 +55,20 @@ function getPointGen() {
 	if (hasUpgrade('c', 11)) gain = gain.times(5)
 	if (hasUpgrade('c', 12)) gain = gain.times(upgradeEffect('c', 12))
 	if (hasUpgrade('c', 13)) gain = gain.times(upgradeEffect('c', 13))
+	gain = gain.times(buyableEffect('c', 11))
 	if (hasUpgrade('r', 11)) gain = gain.times(5)
+	if (hasUpgrade('r', 12)) gain = gain.times(upgradeEffect('r', 12))
 	if (hasMilestone('r', 1)) gain = gain.times(5)
 	if (hasMilestone('r', 1)) gain = gain.times(tmp['r'].milestones[1].effect)
 	if (hasMilestone('r', 2)) gain = gain.times(tmp['r'].milestones[2].effect)
 	if (hasUpgrade('d', 23)) gain = gain.pow(upgradeEffect('d', 23))
+	if (hasUpgrade('c', 21)) gain = gain.pow(upgradeEffect('c', 21))
 	if (hasMilestone('r', 4)) gain = gain.pow(tmp['r'].milestones[4].effect)
 	if (hasUpgrade('r', 11)) gain = gain.pow(1.02)
+	if (hasChallenge('r', 11)) gain = gain.pow(1.025)
+	if (hasChallenge('r', 12)) gain = gain.pow(1.025)
+	if (inChallenge('r',22)) gain = gain.pow(0.2)
+	if (hasChallenge('r', 22)) gain = gain.pow(1.02)
 	return gain
 }
 
