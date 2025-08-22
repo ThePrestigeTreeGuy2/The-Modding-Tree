@@ -20,13 +20,13 @@ let VERSION = {
 let changelog = `<h1>Changelog:</h1><br>
 	<h3>v0.0.3</h3><br>
 		- New update<br>
-		- Added more contentbr>
-		- Endgame: 1e75 studs.
+		- Added more content<br>
+		- Endgame: 1e75 studs.<br>
 	<h3>v0.0.2</h3><br>
 		- New update<br>
 		- Ngl I haven't planned to make this update at all until the day before the update released<br>
 		- Added 1 Layer<br>
-		- Endgame: 1 decillion studs.
+		- Endgame: 1 decillion studs.<br>
 	<h3>v0.0.1</h3><br>
 		- Game release<br>
 		- Added 2 layers<br>
@@ -69,14 +69,24 @@ function getPointGen() {
 	if (hasMilestone('r', 1)) gain = gain.times(5)
 	if (hasMilestone('r', 1)) gain = gain.times(tmp['r'].milestones[1].effect)
 	if (hasMilestone('r', 2)) gain = gain.times(tmp['r'].milestones[2].effect)
+	gain = gain.times(buyableEffect('r', 13))
+	if (hasUpgrade('g', 11)) gain = gain.times(upgradeEffect('g', 11))
+	if (hasUpgrade('g', 12)) gain = gain.times(upgradeEffect('g', 12))
+	if (hasUpgrade('g', 14)) gain = gain.times(upgradeEffect('g', 14))
+	if (hasMilestone('g', 1)) gain = gain.times(10)
+	if (hasMilestone('g', 2)) gain = gain.times(10)
+	if (hasMilestone('g', 3)) gain = gain.times(10)
+    gain = gain.times(tmp['f'].effect)
 	if (hasUpgrade('d', 23)) gain = gain.pow(upgradeEffect('d', 23))
 	if (hasUpgrade('c', 21)) gain = gain.pow(upgradeEffect('c', 21))
 	if (hasMilestone('r', 4)) gain = gain.pow(tmp['r'].milestones[4].effect)
 	if (hasUpgrade('r', 11)) gain = gain.pow(1.02)
+	gain = gain.pow(buyableEffect('r', 11))
 	if (hasChallenge('r', 11)) gain = gain.pow(1.025)
 	if (hasChallenge('r', 12)) gain = gain.pow(1.025)
 	if (inChallenge('r',22)) gain = gain.pow(0.2)
 	if (hasChallenge('r', 22)) gain = gain.pow(1.02)
+	if (hasUpgrade('g', 15)) gain = gain.pow(upgradeEffect('g', 15))
 	return gain
 }
 
@@ -90,7 +100,7 @@ var displayThings = [
 
 // Determines when the game "ends"
 function isEndgame() {
-	return player.points.gte(new Decimal("e33"))
+	return player.points.gte(new Decimal("e75"))
 }
 
 
