@@ -13,11 +13,14 @@ let modInfo = {
 
 // Set your version in num and name
 let VERSION = {
-	num: "0.1",
-	name: "beginning of a long journey",
+	num: "0.2",
+	name: "the power of 4 (5) layers",
 }
 
 let changelog = `<h1>Changelog:</h1><br>
+	<h3>v0.2</h3><br>
+		- Added more content<br>
+		- Endgame: 1e100 origin<br>
 	<h3>v0.1</h3><br>
 		- Release<br>
 		- Added 4 layers<br>
@@ -45,8 +48,9 @@ function getPointGen() {
 	return new Decimal(0)
 	let gain = new Decimal(1)
 	if (hasUpgrade("o", 12)) gain = gain.times(upgradeEffect("o", 12))
+	if (hasUpgrade("o", 21)) gain = gain.times(upgradeEffect("o", 21))
 	gain = gain.times(buyableEffect('o', 12))
-	if (hasUpgrade("0,0", 11)) gain = gain.times(2)
+	if (hasUpgrade("0,0", 11)) gain = gain.times(upgradeEffect("0,0", 11))
 	if (hasUpgrade("0,0", 12)) gain = gain.times(upgradeEffect("0,0", 12))
 	if (hasUpgrade("0,0", 14)) gain = gain.times(upgradeEffect("0,0", 14))
 	gain = gain.times(buyableEffect('0,0', 11))
@@ -54,8 +58,14 @@ function getPointGen() {
 	if (hasUpgrade("0,1", 12)) gain = gain.times(upgradeEffect("0,1", 12))
 	if (hasUpgrade("0,1", 14)) gain = gain.times(upgradeEffect("0,1", 14))
 	gain = gain.times(buyableEffect('0,1', 11))
+	gain = gain.times(buyableEffect('0,1', 12))
 	if (hasUpgrade("1,0", 12)) gain = gain.times(upgradeEffect("1,0", 12))
+	gain = gain.times(buyableEffect('1,0', 12))
     gain = gain.times(tmp['1,1'].effect)
+    if (hasUpgrade("1,1", 12)) gain = gain.times(10)
+    if (hasUpgrade("1,1", 21)) gain = gain.times(upgradeEffect("1,1", 21))
+    if (hasUpgrade("1,1", 25)) gain = gain.times(10)
+	gain = gain.times(buyableEffect('1,1', 11))
 	return gain
 }
 

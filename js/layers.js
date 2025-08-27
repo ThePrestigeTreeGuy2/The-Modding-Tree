@@ -18,8 +18,16 @@ addLayer("o", {
     gainMult() { // Calculate the multiplier for main currency from bonuses
         let mult = new Decimal(1)
         if (hasUpgrade("o", 11)) mult = mult.times(upgradeEffect("o", 11))
+        if (hasUpgrade("o", 22)) mult = mult.times(upgradeEffect("o", 22))
         mult = mult.times(buyableEffect("o", 11))
+        mult = mult.times(buyableEffect("o", 13))
+        if (hasUpgrade("o", 23)) mult = mult.times(upgradeEffect("0,0", 11))
         if (hasUpgrade("0,1", 13)) mult = mult.times(upgradeEffect("0,1", 13))
+        if (hasUpgrade("1,0", 23)) mult = mult.times(buyableEffect("1,0", 11))
+        if (hasUpgrade("1,0", 25)) mult = mult.times(upgradeEffect("0,0", 14))
+        if (hasUpgrade("1,1", 11)) mult = mult.times(5)
+        if (hasUpgrade("1,1", 21)) mult = mult.times(upgradeEffect("1,1", 21))
+        if (hasUpgrade("1,1", 25)) mult = mult.times(10)
         return mult
     },
     gainExp() { // Calculate the exponent on main currency from bonuses
@@ -48,8 +56,8 @@ addLayer("o", {
             description: "Origin boosts 0,0 gain and itself.",
             cost: new Decimal(20),
             tooltip: "x(log10(x+1)+1)^0.75 0,0 gain and Origin gain.",
-            effect() {
-                return player[this.layer].points.add(1).log10().add(1).pow(0.75)
+            effect() {if (hasUpgrade('o',14)) return player[this.layer].points.add(1).log10().add(1).pow(0.75).pow(upgradeEffect('o',14))
+                else return player[this.layer].points.add(1).log10().add(1).pow(0.75)
             },
             effectDisplay() { return format(upgradeEffect(this.layer, this.id))+"x" }, // Add formatting to the effect
         },
@@ -57,11 +65,73 @@ addLayer("o", {
             title: "Origin II",
             description: "Origin boosts point gain.",
             cost: new Decimal(5e3),
+            unlocked(){return (hasUpgrade("o",11))},
             tooltip: "x(log10(x+1)+1) point gain.",
             effect() {
                 return player[this.layer].points.add(1).log10().add(1).pow(buyableEffect('o',12))
             },
             effectDisplay() { return format(upgradeEffect(this.layer, this.id))+"x" }, // Add formatting to the effect
+        },
+        13: {
+            title: "Origin III",
+            description: "Unlock an Origin buyable.",
+            cost: new Decimal(1e8),
+            unlocked(){return (hasUpgrade("0,0",34))},
+        },
+        14: {
+            title: "Origin IV",
+            description: "Every Origin upgrade exponentiates Origin I effect.",
+            cost: new Decimal(1e11),
+            unlocked(){return (hasUpgrade("o",13))},
+            effect() {
+                return new Decimal(1).add((player[this.layer].upgrades.length))
+            },
+            effectDisplay() { return '^' + format(upgradeEffect(this.layer, this.id)) }, // Add formatting to the effect
+        },
+        15: {
+            title: "Origin V",
+            description: "Square 0,1,1,0,0 and 1,0,1,0,0 effect.",
+            cost: new Decimal(1e21),
+            unlocked(){return (hasUpgrade("o",14))},
+        },
+        21: {
+            title: "Origin VI",
+            description: "Every Origin upgrade multiples point gain by 3.",
+            cost: new Decimal(1e38),
+            unlocked(){return (hasUpgrade("1,0",21))},
+            effect() {
+                let x = new Decimal(3)
+                return new Decimal(x).pow(player[this.layer].upgrades.length)
+            },
+            effectDisplay() { return format(upgradeEffect(this.layer, this.id))+"x" }, // Add formatting to the effect
+        },
+        22: {
+            title: "Origin VII",
+            description: "Total 1,1 boosts Origin gain.",
+            cost: new Decimal(1e43),
+            unlocked(){return (hasUpgrade("1,0",22))},
+            effect() {
+                return player['1,1'].total.add(1).log2().add(1).pow(3)
+            },
+            effectDisplay() { return format(upgradeEffect(this.layer, this.id))+"x" }, // Add formatting to the effect
+        },
+        23: {
+            title: "Origin VIII",
+            description: "Time to buff the most forgotten upgrade! Origin IV now affects 0,0,0,0,0, and 0,0,0,0,0 also boosts Origin gain.",
+            cost: new Decimal(1e55),
+            unlocked(){return (hasUpgrade("1,0",23))},
+        },
+        24: {
+            title: "Origin IX",
+            description: "Cube the 1,1,0,1,0 effect.",
+            cost: new Decimal(1e68),
+            unlocked(){return (hasUpgrade("1,0",24))},
+        },
+        25: {
+            title: "Origin X",
+            description: "Square 0,0,0,0,0 effect...",
+            cost: new Decimal(1e86),
+            unlocked(){return (hasUpgrade("1,0",25))},
         },
     },
     buyables: {
@@ -72,7 +142,7 @@ addLayer("o", {
             <b>Cost:</b>` + format(this.cost()) + `
             <b>Amount:</b>` + format(getBuyableAmount(this.layer,this.id)) +`
             <b>Effect:</b>` + format(this.effect()) + 'x'},
-            tooltip: "xlog10(x+1)+1) Origin gain",
+            tooltip: "xlog10(x+1)+1 Origin gain",
             canAfford() { return player[this.layer].points.gte(this.cost()) },
             effect(){
                 return player[this.layer].points.add(1).log10().add(1).pow(getBuyableAmount(this.layer,this.id))},
@@ -98,6 +168,23 @@ addLayer("o", {
                 setBuyableAmount(this.layer, this.id, getBuyableAmount(this.layer, this.id).add(1))
             },
             unlocked(){return (hasUpgrade("1,0",13))}
+        },
+        13: {
+            cost(x) { return new Decimal(1e9).mul(new Decimal(10).pow(x.pow(2))) },
+            title: "Origin 3",
+            display() { return `1,0 boosts Origin gain.
+            <b>Cost:</b>` + format(this.cost()) + `
+            <b>Amount:</b>` + format(getBuyableAmount(this.layer,this.id)) +`
+            <b>Effect:</b>` + format(this.effect()) + 'x'},
+            tooltip: "xlog2(x+1)+1 Origin gain.",
+            canAfford() { return player[this.layer].points.gte(this.cost()) },
+            effect(){ if (hasUpgrade('1,0',21)) return player['1,0'].points.add(1).log2().add(1).pow(1.5).pow(getBuyableAmount(this.layer,this.id))
+                else return player['1,0'].points.add(1).log2().add(1).pow(getBuyableAmount(this.layer,this.id))},
+            buy() {
+                player[this.layer].points = player[this.layer].points.sub(this.cost())
+                setBuyableAmount(this.layer, this.id, getBuyableAmount(this.layer, this.id).add(1))
+            },
+            unlocked(){return (hasUpgrade("o",13))}
         },
     },
 })
@@ -125,8 +212,10 @@ addLayer("0,0", {
         if (hasUpgrade("o", 11)) mult = mult.times(upgradeEffect("o", 11))
         mult = mult.times(tmp['0,1'].effect)
         mult = mult.times(tmp['1,0'].effect)
-        mult = mult.times(tmp['1,1'].effect)
         mult = mult.times(buyableEffect('1,0', 11))
+        mult = mult.times(tmp['1,1'].effect)
+        if (hasUpgrade("1,1", 13)) mult = mult.times(5)
+        if (hasUpgrade("1,1", 25)) mult = mult.times(10)
         return mult
     },
     gainExp() { // Calculate the exponent on main currency from bonuses
@@ -157,6 +246,12 @@ addLayer("0,0", {
             title: "0,0,0,0,0",
             description: "x2 points.",
             cost: new Decimal(1),
+            effect() {
+                if (hasUpgrade('o',25)) return new Decimal (2).pow(2).pow(upgradeEffect('o',14))
+                if (hasUpgrade('o',23)) return new Decimal (2).pow(upgradeEffect('o',14))
+                else return new Decimal (2)
+            },
+            effectDisplay() { return format(upgradeEffect(this.layer, this.id))+"x" }, // Add formatting to the effect
         },
         12: {
             title: "0,0,0,0,1",
@@ -190,6 +285,7 @@ addLayer("0,0", {
             effect() {
                 let x = new Decimal(1.2)
                 if (hasUpgrade('0,0', 21)) x = new Decimal(1.2).pow(2)
+                if (hasUpgrade('1,0', 25)) x = new Decimal(1.2).pow(2).pow(2)
                 return new Decimal(x).pow(player[this.layer].upgrades.length)
             },
             effectDisplay() { return format(upgradeEffect(this.layer, this.id))+"x" }, // Add formatting to the effect
@@ -224,7 +320,7 @@ addLayer("0,0", {
             cost: new Decimal(1500),
             unlocked(){return (hasUpgrade("0,0",23))},
             effect() {
-                return new Decimal(1.075).pow(player[this.layer].upgrades.length)
+                return new Decimal(1.075).pow(player[this.layer].upgrades.length).pow(buyableEffect('0,0',13))
             },
             effectDisplay() { return format(upgradeEffect(this.layer, this.id))+"x" }, // Add formatting to the effect
         },
@@ -234,22 +330,58 @@ addLayer("0,0", {
             cost: new Decimal(5000),
             unlocked(){return (hasUpgrade("0,0",24))},
         },
+        31: {
+            title: "0,0,0,2,0",
+            description: "0,0,1,0,1 adds to 0,0,1,0,0. (pg132 moment fr)",
+            cost: new Decimal(2.5e22),
+            unlocked(){return (hasMilestone("1,1",1))},
+        },
+        32: {
+            title: "0,0,0,2,1",
+            description: "0,0,1,0,0 double exponent is now 1.22.",
+            cost: new Decimal(2.5e23),
+            unlocked(){return (hasUpgrade("0,0",31))},
+        },
+        33: {
+            title: "0,0,0,2,2",
+            description: "0,0,1,0,1 double exponent is now 1.6.",
+            cost: new Decimal(5e24),
+            unlocked(){return (hasUpgrade("0,0",32))},
+        },
+        34: {
+            title: "0,0,0,2,3",
+            description: "Unlock more Origin upgrades.",
+            cost: new Decimal(1e26),
+            unlocked(){return (hasUpgrade("0,0",33))},
+        },
+        35: {
+            title: "0,0,0,2,4",
+            description: "Unlock a 0,0 buyable.",
+            cost: new Decimal(1e42),
+            unlocked(){return (hasUpgrade("0,0",34))},
+        },
     },
     buyables: {
         11: {
-            cost(x) { if (hasUpgrade('1,0',11)) return new Decimal(1).mul(x.add(1).pow(x.add(1).pow(1.4)))
+            cost(x) { if (hasUpgrade('0,0',32)) return new Decimal(1).mul(x.add(1).pow(x.add(1).pow(1.22)))
+                else if (hasUpgrade('1,0',11)) return new Decimal(1).mul(x.add(1).pow(x.add(1).pow(1.4)))
                 else if (hasUpgrade('0,1',11)) return new Decimal(1).mul(x.add(1).pow(x.add(1).pow(1.6)))
                 else return new Decimal(1).mul(x.add(1).pow(x.add(1).pow(2))) },
             title: "0,0,1,0,0",
-            display() { return `x1.5 point gain.
+            display() { if (hasUpgrade('0,0',31)) return `x1.5 point gain.
+            <b>Cost:</b>` + format(this.cost()) + `
+            <b>Amount:</b>` + format(getBuyableAmount(this.layer,this.id)) + " + " + format(getBuyableAmount(this.layer,12)) +`
+            <b>Effect:</b>` + format(this.effect()) + 'x'
+            else return `x1.5 point gain.
             <b>Cost:</b>` + format(this.cost()) + `
             <b>Amount:</b>` + format(getBuyableAmount(this.layer,this.id)) +`
             <b>Effect:</b>` + format(this.effect()) + 'x'},
             canAfford() { return player[this.layer].points.gte(this.cost()) },
             effect(){
-                let y = new Decimal(1.5)
-                if (hasUpgrade('0,0', 22)) y = new Decimal(1.5).pow(1.75)
-                return new Decimal(y).pow(getBuyableAmount(this.layer,this.id))},
+                let y = new Decimal(1.5).add(buyableEffect('0,0',21))
+                if (hasUpgrade('0,0', 22)) y = new Decimal(1.5).add(buyableEffect('0,0',21)).pow(1.75)
+                if (hasUpgrade('0,0', 31)) return new Decimal(y).pow(getBuyableAmount(this.layer,this.id).add(getBuyableAmount(this.layer,12)))
+                else return new Decimal(y).pow(getBuyableAmount(this.layer,this.id))},
             buy() {
                 player[this.layer].points = player[this.layer].points.sub(this.cost())
                 setBuyableAmount(this.layer, this.id, getBuyableAmount(this.layer, this.id).add(1))
@@ -257,12 +389,13 @@ addLayer("0,0", {
             unlocked(){return (hasUpgrade("0,0",15))}
         },
         12: {
-            cost(x) { return new Decimal(100000000).mul(x.add(1).pow(x.add(1).pow(2))) },
+            cost(x) { if (hasUpgrade('0,0',33)) return new Decimal(100000000).mul(x.add(1).pow(x.add(1).pow(1.6)))
+                else return new Decimal(100000000).mul(x.add(1).pow(x.add(1).pow(2))) },
             title: "0,0,1,0,1",
             display() { return `Points boost point gain.
             <b>Cost:</b>` + format(this.cost()) + `
             <b>Amount:</b>` + format(getBuyableAmount(this.layer,this.id)) +`
-            <b>Effect:</b>` + format(this.effect()) + 'x'},
+            <b>Effect:</b>` + format(this.effect()) + "x"},
             tooltip()  {if (hasUpgrade('1,0',14)) return `xlog10(x+1)+1)^0.4 point gain`
                 else return `xlog10(x+1)+1)^0.25 point gain`
             },
@@ -275,6 +408,39 @@ addLayer("0,0", {
                 setBuyableAmount(this.layer, this.id, getBuyableAmount(this.layer, this.id).add(1))
             },
             unlocked(){return (hasUpgrade("0,1",15))}
+        },
+        13: {
+            cost(x) { return new Decimal(1e14).mul(new Decimal(10).pow(x.pow(2))) },
+            title: "0,0,1,0,2",
+            display() { return `Exponentiate the 0,0,0,1,3 effect.
+            <b>Cost:</b>` + format(this.cost()) + `
+            <b>Amount:</b>` + format(getBuyableAmount(this.layer,this.id)) +`
+            <b>Effect:</b>` + '^' + format(this.effect())},
+            tooltip: "^(x+1) 0,0,0,1,3 effect.",
+            canAfford() { return player[this.layer].points.gte(this.cost()) },
+            effect(){
+                return getBuyableAmount(this.layer,this.id).add(1)},
+            buy() {
+                player[this.layer].points = player[this.layer].points.sub(this.cost())
+                setBuyableAmount(this.layer, this.id, getBuyableAmount(this.layer, this.id).add(1))
+            },
+            unlocked(){return (hasUpgrade("1,0",15))}
+        },
+        21: {
+            cost(x) { return new Decimal(1e42).mul(x.add(1).pow(x.add(1).pow((new Decimal(2).pow(x.div(10).add(1)))))) },
+            title: "0,0,1,1,1",
+            display() { return `+0.1 to the 0,0,1,0,0 base. (before exponent)
+            <b>Cost:</b>` + format(this.cost()) + `
+            <b>Amount:</b>` + format(getBuyableAmount(this.layer,this.id)) +`
+            <b>Effect:</b>` + '+' + format(this.effect())},
+            canAfford() { return player[this.layer].points.gte(this.cost()) },
+            effect(){
+                return getBuyableAmount(this.layer,this.id).mul(0.1)},
+            buy() {
+                player[this.layer].points = player[this.layer].points.sub(this.cost())
+                setBuyableAmount(this.layer, this.id, getBuyableAmount(this.layer, this.id).add(1))
+            },
+            unlocked(){return (hasUpgrade("0,0",35))}
         },
     },
     milestones: {
@@ -316,6 +482,9 @@ addLayer("0,1", {
     },
     gainMult() { // Calculate the multiplier for main currency from bonuses
         let mult = new Decimal(1)
+        if (hasUpgrade("1,1", 14)) mult = mult.times(3)
+        if (hasUpgrade("0,1", 22)) mult = mult.times(upgradeEffect("0,1", 22))
+        if (hasUpgrade("1,1", 25)) mult = mult.times(10)
         return mult
     },
     gainExp() { // Calculate the exponent on main currency from bonuses
@@ -329,7 +498,8 @@ addLayer("0,1", {
     displayRow: 100,
     layerShown(){if (hasUpgrade('0,0',25)|player[this.layer].total.gte(1)) return true},
     effect() {
-        return player[this.layer].total.add(1).log2().add(1).pow(2)
+        if (hasUpgrade('0,1',21)) return player[this.layer].total.add(1).log2().add(1).pow(new Decimal(2).add(upgradeEffect('0,1',21)))
+        else return player[this.layer].total.add(1).log2().add(1).pow(2)
     },
     effectDescription() { return 'multiplying 0,0 gain by ' + format(tmp['0,1'].effect)},
     tabFormat: {
@@ -354,7 +524,7 @@ addLayer("0,1", {
             tooltip: "x(log2(x+1)+1) point gain",
             unlocked(){return (hasUpgrade("0,1",11))},
             effect() {
-                return player[this.layer].total.add(1).log2().add(1)
+                return player[this.layer].total.add(1).log2().add(1).pow(buyableEffect('0,1',12))
             },
             effectDisplay() { return format(upgradeEffect(this.layer, this.id))+"x" }, // Add formatting to the effect
         },
@@ -364,8 +534,8 @@ addLayer("0,1", {
             cost: new Decimal(10),
             tooltip: "x(log2(x+1)+1)^2 Origin gain",
             unlocked(){return (hasUpgrade("0,1",12))},
-            effect() {
-                return player[this.layer].total.add(1).log2().add(1).pow(2)
+            effect() {if (hasUpgrade("0,1",23)) return player[this.layer].total.add(1).log2().add(1).pow(2.6)
+                else return player[this.layer].total.add(1).log2().add(1).pow(2)
             },
             effectDisplay() { return format(upgradeEffect(this.layer, this.id))+"x" }, // Add formatting to the effect
         },
@@ -375,8 +545,8 @@ addLayer("0,1", {
             cost: new Decimal(15),
             tooltip: "x(log10(x+1)+1)^0.5 points gain",
             unlocked(){return (hasUpgrade("0,1",13))},
-            effect() {
-                return player.points.add(1).log10().add(1).pow(0.5)
+            effect() {if (hasUpgrade("1,0",22)) return player.points.add(1).log10().add(1).pow(0.5).pow(buyableEffect('o',12))
+                else return player.points.add(1).log10().add(1).pow(0.5)
             },
             effectDisplay() { return format(upgradeEffect(this.layer, this.id))+"x" }, // Add formatting to the effect
         },
@@ -386,10 +556,55 @@ addLayer("0,1", {
             cost: new Decimal(30),
             unlocked(){return (hasUpgrade("0,1",14))},
         },
+        21: {
+            title: "0,1,0,1,0",
+            description: "Every 0,1 upgrade adds 0.2 to the 0,1 effect exponent.",
+            cost: new Decimal(1e11),
+            unlocked(){return (hasUpgrade("1,1",21))},
+            effect() {
+                return new Decimal(player[this.layer].upgrades.length).mul(0.2)
+            },
+            effectDisplay() { return "+" + format(upgradeEffect(this.layer, this.id)) }, // Add formatting to the effect
+        },
+        22: {
+            title: "0,1,0,1,1",
+            description: "Origin boosts 0,1 gain.",
+            cost: new Decimal(2.5e12),
+            unlocked(){return (hasUpgrade("0,1",21))},
+            tooltip: "x(log10(x+1)+1) 0,1 gain",
+            effect() {
+                return player['o'].points.add(1).log10().add(1)
+            },
+            effectDisplay() { return format(upgradeEffect(this.layer, this.id)) + "x" }, // Add formatting to the effect
+        },
+        23: {
+            title: "0,1,0,1,2",
+            description: "^1.3 0,1,0,0,2 effect.",
+            cost: new Decimal(1e14),
+            unlocked(){return (hasUpgrade("0,1",22))},
+        },
+        24: {
+            title: "0,1,0,1,3",
+            description: "Every 0,1 upgrade subtracts 0.03 from the 0,1,1,0,0 and 0,1,1,0,1 double exponents.",
+            cost: new Decimal(2.5e14),
+            unlocked(){return (hasUpgrade("0,1",23))},
+            effect() {
+                return new Decimal(player[this.layer].upgrades.length).mul(-0.03)
+            },
+            effectDisplay() { return format(upgradeEffect(this.layer, this.id)) }, // Add formatting to the effect
+        },
+        25: {
+            title: "0,1,0,1,4",
+            description: "0,1,1,0,1 amount boosts 0,1,1,0,0 effect at a reduced rate.",
+            cost: new Decimal(1e15),
+            unlocked(){return (hasUpgrade("0,1",24))},
+            tooltip: "^(x^0.4) 0,1,1,0,0 effect",
+        },
     },
     buyables: {
         11: {
-            cost(x) { return new Decimal(1).mul(x.add(1).pow(x.add(1).pow(2))) },
+            cost(x) {if (hasUpgrade('0,1',24)) return new Decimal(1).mul(x.add(1).pow(x.add(1).pow(new Decimal(2).add(upgradeEffect('0,1',24)))))
+                else return new Decimal(1).mul(x.add(1).pow(x.add(1).pow(2))) },
             title: "0,1,1,0,0",
             display() { return `x2 point gain.
             <b>Cost:</b>` + format(this.cost()) + `
@@ -398,12 +613,33 @@ addLayer("0,1", {
             canAfford() { return player[this.layer].points.gte(this.cost()) },
             effect(){
                 let y = new Decimal(2)
-                return new Decimal(y).pow(getBuyableAmount(this.layer,this.id))},
+                if (hasUpgrade('o',15)) y = new Decimal(2).pow(2)
+                if (hasUpgrade('0,1',25)) y = new Decimal(2).pow(2).pow(new Decimal(getBuyableAmount('0,1',12)).pow(0.4))
+                if (hasUpgrade('1,1',24)) return new Decimal(y).pow(3).pow(getBuyableAmount(this.layer,this.id))
+                else return new Decimal(y).pow(getBuyableAmount(this.layer,this.id))},
             buy() {
                 player[this.layer].points = player[this.layer].points.sub(this.cost())
                 setBuyableAmount(this.layer, this.id, getBuyableAmount(this.layer, this.id).add(1))
             },
             unlocked(){return (hasUpgrade("0,1",15))}
+        },
+        12: {
+            cost(x) {if (hasUpgrade('0,1',24)) return new Decimal(1e4).mul(new Decimal(10).pow(x.mul(4).pow(new Decimal(2).add(upgradeEffect('0,1',24)))))
+                else return new Decimal(1e4).mul(new Decimal(10).pow(x.mul(4).pow(2))) },
+            title: "0,1,1,0,1",
+            display() { return `Exponentiate the 0,1,0,0,1 effect.
+            <b>Cost:</b>` + format(this.cost()) + `
+            <b>Amount:</b>` + format(getBuyableAmount(this.layer,this.id)) +`
+            <b>Effect:</b>` + '^' + format(this.effect())},
+            tooltip: "^(x+1) 0,1,0,0,1 effect.",
+            canAfford() { return player[this.layer].points.gte(this.cost()) },
+            effect(){
+                return getBuyableAmount(this.layer,this.id).add(1)},
+            buy() {
+                player[this.layer].points = player[this.layer].points.sub(this.cost())
+                setBuyableAmount(this.layer, this.id, getBuyableAmount(this.layer, this.id).add(1))
+            },
+            unlocked(){return (hasMilestone("1,1",1))}
         },
     },
 })
@@ -429,6 +665,8 @@ addLayer("1,0", {
     gainMult() { // Calculate the multiplier for main currency from bonuses
         let mult = new Decimal(1)
         if (hasMilestone("0,0", 2)) mult = mult.times(tmp['0,0'].milestones[2].effect)
+        if (hasUpgrade("1,1", 15)) mult = mult.times(2)
+        if (hasUpgrade("1,1", 25)) mult = mult.times(10)
         return mult
     },
     gainExp() { // Calculate the exponent on main currency from bonuses
@@ -467,7 +705,7 @@ addLayer("1,0", {
             unlocked(){return (hasUpgrade("1,0",11))},
             effect() {
                 let x = new Decimal(2)
-                return new Decimal(x).pow(player[this.layer].upgrades.length)
+                return new Decimal(x).pow(player[this.layer].upgrades.length).pow(buyableEffect('1,0',12))
             },
             effectDisplay() { return format(upgradeEffect(this.layer, this.id))+"x" }, // Add formatting to the effect
         },
@@ -485,9 +723,39 @@ addLayer("1,0", {
         },
         15: {
             title: "1,0,0,0,4",
-            description: "Unlock the next layer and a buyable.",
+            description: "Unlock the next layer and 2 buyables.",
             cost: new Decimal(30),
             unlocked(){return (hasUpgrade("1,0",14))},
+        },
+        21: {
+            title: "1,0,0,1,0",
+            description: "Time for some Origin-related upgrades! ^1.5 Origin 3 effect, and each second row 1,0 upgrade will unlock an Origin upgrade.",
+            cost: new Decimal(1e8),
+            unlocked(){return (hasUpgrade("1,1",22))},
+        },
+        22: {
+            title: "1,0,0,1,1",
+            description: "Origin 2 also affects 0,1,0,0,3.",
+            cost: new Decimal(1e9),
+            unlocked(){return (hasUpgrade("1,0",21))},
+        },
+        23: {
+            title: "1,0,0,1,2",
+            description: "1,0,1,0,0 also affects Origin gain.",
+            cost: new Decimal(1e10),
+            unlocked(){return (hasUpgrade("1,0",22))},
+        },
+        24: {
+            title: "1,0,0,1,3",
+            description: "1,0,1,0,1 also affects 1,0,1,0,0.",
+            cost: new Decimal(1e11),
+            unlocked(){return (hasUpgrade("1,0",23))},
+        },
+        25: {
+            title: "1,0,0,1,4",
+            description: "You're getting close! Square 0,0,0,0,3 effect and 0,0,0,0,3 also affects Origin gain. (reset coming soon, unlocked at 1e100 origin)",
+            cost: new Decimal(1e13),
+            unlocked(){return (hasUpgrade("1,0",24))},
         },
     },
     buyables: {
@@ -501,7 +769,26 @@ addLayer("1,0", {
             canAfford() { return player[this.layer].points.gte(this.cost()) },
             effect(){
                 let y = new Decimal(2)
+                if (hasUpgrade('o',15)) y = new Decimal(2).pow(2)
+                if (hasUpgrade('1,0',24)) y = new Decimal(2).pow(2).pow(buyableEffect('1,0',12))
                 return new Decimal(y).pow(getBuyableAmount(this.layer,this.id))},
+            buy() {
+                player[this.layer].points = player[this.layer].points.sub(this.cost())
+                setBuyableAmount(this.layer, this.id, getBuyableAmount(this.layer, this.id).add(1))
+            },
+            unlocked(){return (hasUpgrade("1,0",15))}
+        },
+        12: {
+            cost(x) { return new Decimal(100).mul(new Decimal(10).pow(x.mul(2).pow(2))) },
+            title: "1,0,1,0,1",
+            display() { return `Exponentiate the 1,0,0,0,1 effect.
+            <b>Cost:</b>` + format(this.cost()) + `
+            <b>Amount:</b>` + format(getBuyableAmount(this.layer,this.id)) +`
+            <b>Effect:</b>` + '^' + format(this.effect())},
+            tooltip: "^(x+0.75) 1,0,0,0,1 effect.",
+            canAfford() { return player[this.layer].points.gte(this.cost()) },
+            effect(){
+                return getBuyableAmount(this.layer,this.id).mul(0.75).add(1)},
             buy() {
                 player[this.layer].points = player[this.layer].points.sub(this.cost())
                 setBuyableAmount(this.layer, this.id, getBuyableAmount(this.layer, this.id).add(1))
@@ -544,7 +831,8 @@ addLayer("1,1", {
     displayRow: 99,
     layerShown(){if (hasUpgrade('1,0',15)|player[this.layer].total.gte(1)) return true},
     effect() {
-        return player[this.layer].total.add(1).log2().add(1).pow(2)
+        if (hasUpgrade('1,1',22)) return player[this.layer].total.add(1).log2().add(1).pow(4)
+        else return player[this.layer].total.add(1).log2().add(1).pow(2)
     },
     effectDescription() { return 'multiplying point and 0,0 gain by ' + format(tmp['1,1'].effect)},
     tabFormat: {
@@ -553,11 +841,100 @@ addLayer("1,1", {
         },
         "Buyables": {
             content: ['main-display','prestige-button','buyables'],
-            unlocked(){return (hasUpgrade("1,1",15))},
+            unlocked(){return (hasMilestone("1,1",1))},
+        },
+        "Milestones": {
+            content: ['main-display','prestige-button','milestones'],
         },
     },
     upgrades: {
+        11: {
+            title: "1,1,0,0,0",
+            description: "x5 Origin gain.",
+            cost: new Decimal(1),
+        },
+        12: {
+            title: "1,1,0,0,1",
+            description: "x10 point gain.",
+            cost: new Decimal(1),
+        },
+        13: {
+            title: "1,1,0,0,2",
+            description: "x5 0,0 gain.",
+            cost: new Decimal(1),
+        },
+        14: {
+            title: "1,1,0,0,3",
+            description: "x3 0,1 gain.",
+            cost: new Decimal(1),
+        },
+        15: {
+            title: "1,1,0,0,4",
+            description: "x2 1,0 gain.",
+            cost: new Decimal(1),
+        },
+        21: {
+            title: "1,1,0,1,0",
+            description: "Every 1,1 upgrade multiplies point and Origin gain by 2, and unlock more 0,1 upgrades.",
+            cost: new Decimal(25),
+            unlocked(){return (hasMilestone("1,1",1))},
+            effect() {
+                let x = new Decimal(2)
+                if (hasUpgrade('o',24)) x = new Decimal(2).pow(3)
+                return new Decimal(x).pow(player[this.layer].upgrades.length)
+            },
+            effectDisplay() { return format(upgradeEffect(this.layer, this.id))+"x" }, // Add formatting to the effect
+        },
+        22: {
+            title: "1,1,0,1,2",
+            description: "Unlock more 1,0 upgrades.",
+            cost: new Decimal(170),
+            unlocked(){return (hasUpgrade("1,1",21))},
+        },
+        23: {
+            title: "1,1,0,1,3",
+            description: "Last 3 upgrades until new reset layer! Cube 1,1,1,0,0 effect.",
+            cost: new Decimal(45000),
+            unlocked(){return (hasUpgrade("1,1",22))},
+        },
+        24: {
+            title: "1,1,0,1,4",
+            description: "So close! Cube 0,1,1,0,0 effect.",
+            cost: new Decimal(110000),
+            unlocked(){return (hasUpgrade("1,1",23))},
+        },
+        25: {
+            title: "1,1,0,1,5",
+            description: "Unlock a reset, and x10 points, Origin, 0,0, 0,1, and 1,0!",
+            cost: new Decimal(350000),
+            unlocked(){return (hasUpgrade("1,1",24))},
+        },
     },
     buyables: {
+        11: {
+            cost(x) { return new Decimal(1).mul(new Decimal(10).pow(x.pow(2))) },
+            title: "1,1,1,0,0",
+            display() { return `x10 point gain.
+            <b>Cost:</b>` + format(this.cost()) + `
+            <b>Amount:</b>` + format(getBuyableAmount(this.layer,this.id)) +`
+            <b>Effect:</b>` + format(this.effect()) + 'x'},
+            canAfford() { return player[this.layer].points.gte(this.cost()) },
+            effect(){
+                let y = new Decimal(10)
+                if (hasUpgrade('1,1',23)) y = new Decimal(10).pow(3)
+                return new Decimal(y).pow(getBuyableAmount(this.layer,this.id))},
+            buy() {
+                player[this.layer].points = player[this.layer].points.sub(this.cost())
+                setBuyableAmount(this.layer, this.id, getBuyableAmount(this.layer, this.id).add(1))
+            },
+            unlocked(){return (hasMilestone("1,1",1))}
+        },
+    },
+    milestones: {
+        1: {
+            requirementDescription: "Requires: First 5 1,1 Upgrades",
+            effectDescription: "Unlock more 0,0 upgrades and unlock 3 buyables.",
+            done() {if (hasUpgrade('1,1',11) && hasUpgrade('1,1',12) && hasUpgrade('1,1',13) && hasUpgrade('1,1',14) && hasUpgrade('1,1',15)) return true}
+        },
     },
 })
