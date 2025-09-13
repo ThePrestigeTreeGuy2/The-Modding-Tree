@@ -13,11 +13,15 @@ let modInfo = {
 
 // Set your version in num and name
 let VERSION = {
-	num: "0.2",
-	name: "the power of 4 (5) layers",
+	num: "0.3",
+	name: "Expansion Part 1",
 }
 
 let changelog = `<h1>Changelog:</h1><br>
+	<h3>v0.3</h3><br>
+		- Added more content<br>
+		- Added 4 layers<br>
+		- Endgame: 3 dots<br>
 	<h3>v0.2</h3><br>
 		- Added more content<br>
 		- Endgame: 1e100 origin<br>
@@ -66,6 +70,11 @@ function getPointGen() {
     if (hasUpgrade("1,1", 21)) gain = gain.times(upgradeEffect("1,1", 21))
     if (hasUpgrade("1,1", 25)) gain = gain.times(10)
 	gain = gain.times(buyableEffect('1,1', 11))
+    gain = gain.times(tmp['-1,1'].effect)
+    if (hasUpgrade("-1,1", 15)) gain = gain.times(upgradeEffect("-1,1", 15))
+    if (hasUpgrade("-1,0", 24)) gain = gain.times(upgradeEffect("-1,0", 24))
+    if (hasMilestone("d", 1)) gain = gain.times(5)
+    if (hasUpgrade("d", 21)) gain = gain.times(upgradeEffect("d", 21))
 	return gain
 }
 

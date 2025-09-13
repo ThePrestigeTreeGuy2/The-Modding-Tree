@@ -28,6 +28,11 @@ addLayer("o", {
         if (hasUpgrade("1,1", 11)) mult = mult.times(5)
         if (hasUpgrade("1,1", 21)) mult = mult.times(upgradeEffect("1,1", 21))
         if (hasUpgrade("1,1", 25)) mult = mult.times(10)
+        if (hasUpgrade("-1,0", 25)) mult = mult.times(upgradeEffect("-1,0", 25))
+        if (hasMilestone("d", 1)) mult = mult.times(5)
+        mult = mult.times(tmp['1,-1'].effect)
+        if (hasMilestone("d", 2)) mult = mult.times(tmp['d'].milestones[2].effect)
+        if (hasUpgrade("d", 24)) mult = mult.times(upgradeEffect("d", 24))
         return mult
     },
     gainExp() { // Calculate the exponent on main currency from bonuses
@@ -216,6 +221,9 @@ addLayer("0,0", {
         mult = mult.times(tmp['1,1'].effect)
         if (hasUpgrade("1,1", 13)) mult = mult.times(5)
         if (hasUpgrade("1,1", 25)) mult = mult.times(10)
+        mult = mult.times(buyableEffect("-1,1", 11))
+        if (hasMilestone("d", 1)) mult = mult.times(5)
+        if (player[this.layer].points.gte('e500')) mult = mult.times(player.points.log10())
         return mult
     },
     gainExp() { // Calculate the exponent on main currency from bonuses
@@ -225,19 +233,60 @@ addLayer("0,0", {
         let dmult = new Decimal(1)
         return dmult
     },
+    softcap : new Decimal("e500"),
+    softcapPower: new Decimal(0),
     row: 200, // Row the layer is in on the tree (0 is the first row)
     displayRow: 100,
     layerShown(){return true},
+    passiveGeneration() {
+        if (hasMilestone("d",3)) return 1;
+    },
+    automate() {
+        if (hasMilestone("d", 4)) {
+            buyBuyable("0,0", 11);
+            buyBuyable("0,0", 12);
+            buyBuyable("0,0", 13);
+        }
+        if (hasMilestone("d", 5)) {
+            buyBuyable("0,0", 21);
+        }
+    },
+    doReset(resettingLayer) {
+    // Stage 1, almost always needed, makes resetting this layer not delete your progress
+    if (layers[resettingLayer].row <= this.row) return;
+
+    // Stage 2, track which specific subfeatures you want to keep, e.g. Upgrade 11, Challenge 32, Buyable 12
+    let keptUpgrades = []
+    if (hasMilestone('1,1', 1)) keptUpgrades.push(11,12,13,14,15,21,22,23,24,25)
+    if (hasMilestone('d', 2)) keptUpgrades.push(11,12,13,14,15,21,22,23,24,25)
+    if (hasMilestone('d', 5)) keptUpgrades.push(31,32,33,34,35)
+
+    // Stage 3, track which main features you want to keep - all upgrades, total points, specific toggles, etc.
+    let keep = [];
+    if (hasMilestone('d', 6)) keep.push("milestones");
+
+    // Stage 4, do the actual data reset
+    layerDataReset(this.layer, keep);
+
+    // Stage 5, add back in the specific subfeatures you saved earlier
+    player[this.layer].upgrades.push(...keptUpgrades)
+    },
     tabFormat: {
         "Upgrades": {
-            content: ['main-display','prestige-button','upgrades'],
+            content() {if (hasMilestone("d",3)) return ['main-display','upgrades']
+                else return ['main-display','prestige-button','upgrades']
+            },
         },
         "Buyables": {
-            content: ['main-display','prestige-button','buyables'],
+            content() {if (hasMilestone("d",3)) return ['main-display','buyables']
+                else return ['main-display','prestige-button','buyables']
+            },
             unlocked(){return (hasUpgrade("0,0",15))},
         },
         "Milestones": {
-            content: ['main-display','prestige-button','milestones'],
+            content() {if (hasMilestone("d",3)) return ['main-display','milestones']
+                else return ['main-display','prestige-button','milestones']
+            },
             unlocked(){return (hasUpgrade("0,1",11))},
         },
     },
@@ -363,7 +412,7 @@ addLayer("0,0", {
     },
     buyables: {
         11: {
-            cost(x) { if (hasUpgrade('0,0',32)) return new Decimal(1).mul(x.add(1).pow(x.add(1).pow(1.22)))
+            cost(x) {if (hasUpgrade('0,0',32)) return new Decimal(1).mul(x.add(1).pow(x.add(1).pow(1.22)))
                 else if (hasUpgrade('1,0',11)) return new Decimal(1).mul(x.add(1).pow(x.add(1).pow(1.4)))
                 else if (hasUpgrade('0,1',11)) return new Decimal(1).mul(x.add(1).pow(x.add(1).pow(1.6)))
                 else return new Decimal(1).mul(x.add(1).pow(x.add(1).pow(2))) },
@@ -384,12 +433,14 @@ addLayer("0,0", {
                 else return new Decimal(y).pow(getBuyableAmount(this.layer,this.id))},
             buy() {
                 player[this.layer].points = player[this.layer].points.sub(this.cost())
-                setBuyableAmount(this.layer, this.id, getBuyableAmount(this.layer, this.id).add(1))
+                if (hasMilestone('d',1)) setBuyableAmount(this.layer, this.id, getBuyableAmount(this.layer, this.id).add(2))
+                else setBuyableAmount(this.layer, this.id, getBuyableAmount(this.layer, this.id).add(1))
             },
-            unlocked(){return (hasUpgrade("0,0",15))}
+            unlocked() {return (hasUpgrade("0,0",15))}
         },
         12: {
-            cost(x) { if (hasUpgrade('0,0',33)) return new Decimal(100000000).mul(x.add(1).pow(x.add(1).pow(1.6)))
+            cost(x) { if (hasUpgrade('-1,1',22)) return new Decimal(1).mul(x.add(1).pow(x.add(1).pow(1.6)))
+                if (hasUpgrade('0,0',33)) return new Decimal(100000000).mul(x.add(1).pow(x.add(1).pow(1.6)))
                 else return new Decimal(100000000).mul(x.add(1).pow(x.add(1).pow(2))) },
             title: "0,0,1,0,1",
             display() { return `Points boost point gain.
@@ -410,7 +461,8 @@ addLayer("0,0", {
             unlocked(){return (hasUpgrade("0,1",15))}
         },
         13: {
-            cost(x) { return new Decimal(1e14).mul(new Decimal(10).pow(x.pow(2))) },
+            cost(x) { if (hasUpgrade('-1,1',22)) return new Decimal(1).mul(new Decimal(10).pow(x.pow(2)))
+                else return new Decimal(1e14).mul(new Decimal(10).pow(x.pow(2))) },
             title: "0,0,1,0,2",
             display() { return `Exponentiate the 0,0,0,1,3 effect.
             <b>Cost:</b>` + format(this.cost()) + `
@@ -427,8 +479,10 @@ addLayer("0,0", {
             unlocked(){return (hasUpgrade("1,0",15))}
         },
         21: {
-            cost(x) { return new Decimal(1e42).mul(x.add(1).pow(x.add(1).pow((new Decimal(2).pow(x.div(10).add(1)))))) },
-            title: "0,0,1,1,1",
+            cost(x) { if (hasUpgrade('-1,1',22)) return new Decimal(1).mul(x.add(1).pow(x.add(1).pow(2)))
+                if (hasUpgrade('-1,1',14)) return new Decimal(1e42).mul(x.add(1).pow(x.add(1).pow(2)))
+                else return new Decimal(1e42).mul(x.add(1).pow(x.add(1).pow((new Decimal(2).pow(x.div(10).add(1)))))) },
+            title: "0,0,1,1,0",
             display() { return `+0.1 to the 0,0,1,0,0 base. (before exponent)
             <b>Cost:</b>` + format(this.cost()) + `
             <b>Amount:</b>` + format(getBuyableAmount(this.layer,this.id)) +`
@@ -445,15 +499,15 @@ addLayer("0,0", {
     },
     milestones: {
         1: {
-            requirementDescription: "Requires: 100,000 0,0",
+            requirementDescription: "Requires: 100,000 0,0 (1)",
             effectDescription: "Unlock Origin.",
             done() { return player[this.layer].points.gte(1e5) }
         },
         2: {
-            requirementDescription: "Requires: 1e10 0,0",
+            requirementDescription: "Requires: 1e10 0,0 (2)",
             effectDescription: "0,0 multiplies 1,0 gain.",
             done() { return player[this.layer].points.gte(1e10) },
-            unlocked(){return (hasUpgrade("1,0",11))},
+            unlocked(){return (hasMilestone("0,0",1))},
             effect() {
                 return player[this.layer].points.add(1).log10().div(10).add(1)
             },
@@ -485,6 +539,9 @@ addLayer("0,1", {
         if (hasUpgrade("1,1", 14)) mult = mult.times(3)
         if (hasUpgrade("0,1", 22)) mult = mult.times(upgradeEffect("0,1", 22))
         if (hasUpgrade("1,1", 25)) mult = mult.times(10)
+        if (hasMilestone("d", 1)) mult = mult.times(2)
+        if (hasUpgrade("-1,1", 12)) mult = mult.times(tmp['-1,1'].effect)
+        if (hasUpgrade("d", 22)) mult = mult.times(upgradeEffect("d", 22))
         return mult
     },
     gainExp() { // Calculate the exponent on main currency from bonuses
@@ -495,8 +552,27 @@ addLayer("0,1", {
         return dmult
     },
     row: 201, // Row the layer is in on the tree (0 is the first row)
-    displayRow: 100,
+    displayRow: 99,
     layerShown(){if (hasUpgrade('0,0',25)|player[this.layer].total.gte(1)) return true},
+    doReset(resettingLayer) {
+    // Stage 1, almost always needed, makes resetting this layer not delete your progress
+    if (layers[resettingLayer].row <= this.row) return;
+
+    // Stage 2, track which specific subfeatures you want to keep, e.g. Upgrade 11, Challenge 32, Buyable 12
+    let keptUpgrades = []
+    if (hasMilestone('d', 2)) keptUpgrades.push(11,12,13,14,15)
+    if (hasMilestone('d', 6)) keptUpgrades.push(21,22,23,24,25)
+
+    // Stage 3, track which main features you want to keep - all upgrades, total points, specific toggles, etc.
+    let keep = [];
+    // if (someOtherCondition) keep.push("milestones");
+
+    // Stage 4, do the actual data reset
+    layerDataReset(this.layer, keep);
+
+    // Stage 5, add back in the specific subfeatures you saved earlier
+    player[this.layer].upgrades.push(...keptUpgrades)
+    },
     effect() {
         if (hasUpgrade('0,1',21)) return player[this.layer].total.add(1).log2().add(1).pow(new Decimal(2).add(upgradeEffect('0,1',21)))
         else return player[this.layer].total.add(1).log2().add(1).pow(2)
@@ -667,6 +743,9 @@ addLayer("1,0", {
         if (hasMilestone("0,0", 2)) mult = mult.times(tmp['0,0'].milestones[2].effect)
         if (hasUpgrade("1,1", 15)) mult = mult.times(2)
         if (hasUpgrade("1,1", 25)) mult = mult.times(10)
+        if (hasMilestone("d", 1)) mult = mult.times(2)
+        mult = mult.times(buyableEffect("1,-1", 11))
+        if (hasUpgrade("d", 23)) mult = mult.times(upgradeEffect("d", 23))
         return mult
     },
     gainExp() { // Calculate the exponent on main currency from bonuses
@@ -677,12 +756,31 @@ addLayer("1,0", {
         return dmult
     },
     row: 201, // Row the layer is in on the tree (0 is the first row)
-    displayRow: 99,
+    displayRow: 100,
     layerShown(){return hasUpgrade('0,1',15)},
     effect() {
         return player[this.layer].total.add(1).log2().add(1).pow(2)
     },
     effectDescription() { return 'multiplying 0,0 gain by ' + format(tmp['1,0'].effect)},
+    doReset(resettingLayer) {
+    // Stage 1, almost always needed, makes resetting this layer not delete your progress
+    if (layers[resettingLayer].row <= this.row) return;
+
+    // Stage 2, track which specific subfeatures you want to keep, e.g. Upgrade 11, Challenge 32, Buyable 12
+    let keptUpgrades = []
+    if (hasMilestone('d', 3)) keptUpgrades.push(11,12,13,14,15)
+    if (hasMilestone('d', 6)) keptUpgrades.push(21,22,23,24,25)
+
+    // Stage 3, track which main features you want to keep - all upgrades, total points, specific toggles, etc.
+    let keep = [];
+    // if (someOtherCondition) keep.push("milestones");
+
+    // Stage 4, do the actual data reset
+    layerDataReset(this.layer, keep);
+
+    // Stage 5, add back in the specific subfeatures you saved earlier
+    player[this.layer].upgrades.push(...keptUpgrades)
+    },
     tabFormat: {
         "Upgrades": {
             content: ['main-display','prestige-button','upgrades'],
@@ -779,7 +877,8 @@ addLayer("1,0", {
             unlocked(){return (hasUpgrade("1,0",15))}
         },
         12: {
-            cost(x) { return new Decimal(100).mul(new Decimal(10).pow(x.mul(2).pow(2))) },
+            cost(x) { if (hasUpgrade('-1,1',24)) return new Decimal(1).mul(new Decimal(10).pow(x.mul(1.5).pow(2)))
+                else return new Decimal(100).mul(new Decimal(10).pow(x.mul(2).pow(2))) },
             title: "1,0,1,0,1",
             display() { return `Exponentiate the 1,0,0,0,1 effect.
             <b>Cost:</b>` + format(this.cost()) + `
@@ -793,7 +892,7 @@ addLayer("1,0", {
                 player[this.layer].points = player[this.layer].points.sub(this.cost())
                 setBuyableAmount(this.layer, this.id, getBuyableAmount(this.layer, this.id).add(1))
             },
-            unlocked(){return (hasUpgrade("1,0",15))}
+            unlocked(){return (hasMilestone("1,1",1))}
         },
     },
 })
@@ -818,6 +917,8 @@ addLayer("1,1", {
     },
     gainMult() { // Calculate the multiplier for main currency from bonuses
         let mult = new Decimal(1)
+        if (hasMilestone("d", 1)) mult = mult.times(2)
+        if (hasUpgrade("1,-1", 11)) mult = mult.times(upgradeEffect("1,-1", 11))
         return mult
     },
     gainExp() { // Calculate the exponent on main currency from bonuses
@@ -835,6 +936,25 @@ addLayer("1,1", {
         else return player[this.layer].total.add(1).log2().add(1).pow(2)
     },
     effectDescription() { return 'multiplying point and 0,0 gain by ' + format(tmp['1,1'].effect)},
+    doReset(resettingLayer) {
+    // Stage 1, almost always needed, makes resetting this layer not delete your progress
+    if (layers[resettingLayer].row <= this.row) return;
+
+    // Stage 2, track which specific subfeatures you want to keep, e.g. Upgrade 11, Challenge 32, Buyable 12
+    let keptUpgrades = []
+    if (hasMilestone('d', 4)) keptUpgrades.push(11,12,13,14,15)
+    if (hasMilestone('d', 5)) keptUpgrades.push(21,22,23,24,25)
+
+    // Stage 3, track which main features you want to keep - all upgrades, total points, specific toggles, etc.
+    let keep = [];
+    // if (someOtherCondition) keep.push("milestones");
+
+    // Stage 4, do the actual data reset
+    layerDataReset(this.layer, keep);
+
+    // Stage 5, add back in the specific subfeatures you saved earlier
+    player[this.layer].upgrades.push(...keptUpgrades)
+    },
     tabFormat: {
         "Upgrades": {
             content: ['main-display','prestige-button','upgrades'],
@@ -922,6 +1042,7 @@ addLayer("1,1", {
             effect(){
                 let y = new Decimal(10)
                 if (hasUpgrade('1,1',23)) y = new Decimal(10).pow(3)
+                if (hasMilestone('1,1',2)) y = new Decimal(10).pow(3).pow(3)
                 return new Decimal(y).pow(getBuyableAmount(this.layer,this.id))},
             buy() {
                 player[this.layer].points = player[this.layer].points.sub(this.cost())
@@ -932,9 +1053,606 @@ addLayer("1,1", {
     },
     milestones: {
         1: {
-            requirementDescription: "Requires: First 5 1,1 Upgrades",
-            effectDescription: "Unlock more 0,0 upgrades and unlock 3 buyables.",
+            requirementDescription: "Requires: First 5 1,1 Upgrades (1)",
+            effectDescription: "Unlock more 0,0 upgrades, unlock 3 buyables, and keep the first 10 0,0 upgrades.",
             done() {if (hasUpgrade('1,1',11) && hasUpgrade('1,1',12) && hasUpgrade('1,1',13) && hasUpgrade('1,1',14) && hasUpgrade('1,1',15)) return true}
+        },
+        2: {
+            requirementDescription: "Requires: 1e17 1,1 (2)",
+            effectDescription: "Cube the 1,1,1,0,0 effect.",
+            done() {return player[this.layer].points.gte(1e17)},
+            unlocked(){return (hasUpgrade("-1,1",22))}
+        },
+    },
+})
+addLayer("-1,1", {
+    name: "-1,1", // This is optional, only used in a few places, If absent it just uses the layer id.
+    symbol: "-1,1", // This appears on the layer's node. Default is the id with the first letter capitalized
+    branches: ['0,1'],
+    startData() { return {
+        unlocked: true,
+		points: new Decimal(0),
+    }},
+    color: "#FFF4D5",
+    requires: new Decimal(1e3), // Can be a function that takes requirement increases into account
+    resource: "-1,1", // Name of prestige currency
+    baseResource: "points", // Name of resource prestige is based on
+    baseAmount() {return player.points}, // Get the current amount of baseResource
+    type: "normal", // normal: cost to gain currency depends on amount gained. static: cost depends on how much you already have
+    exponent() { // Calculate the multiplier for main currency from bonuses
+        let exponent = new Decimal(0.05)
+        return exponent
+    },
+    gainMult() { // Calculate the multiplier for main currency from bonuses
+        let mult = new Decimal(1)
+        mult = mult.times(tmp['-1,0'].effect)
+        if (hasUpgrade('-1,0',14)) mult = mult.times(upgradeEffect('-1,0',14))
+        return mult
+    },
+    gainExp() { // Calculate the exponent on main currency from bonuses
+        return new Decimal(1)
+    },
+    directMult() { // Calculate the direct mult after softcap
+        let dmult = new Decimal(1)
+        return dmult
+    },
+    row: 200, // Row the layer is in on the tree (0 is the first row)
+    displayRow: 99,
+    layerShown(){if (hasUpgrade('d',11)) return true},
+    effect() {
+        if (hasUpgrade('-1,1',23)) return player[this.layer].total.add(1).log2().add(1).pow(15)
+        if (hasUpgrade('-1,1',13)) return player[this.layer].total.add(1).log2().add(1).pow(5)
+        else return player[this.layer].total.add(1).log2().add(1)
+    },
+    effectDescription() { return 'multiplying point gain by ' + format(tmp['-1,1'].effect)},
+    tabFormat: {
+        "Upgrades": {
+            content: ['main-display','prestige-button','upgrades'],
+        },
+        "Buyables": {
+            content: ['main-display','prestige-button','buyables'],
+            unlocked() {return (hasUpgrade("0,1",15))}
+        },
+    },
+    upgrades: {
+        11: {
+            title: "-1,1,0,0,0",
+            description: "Remove the linear cost exponent part from -1,1,1,0,0's cost.",
+            cost: new Decimal(1e5),
+        },
+        12: {
+            title: "-1,1,0,0,1",
+            description: "-1,1 effect also boosts 0,1.",
+            cost: new Decimal(1e6),
+            unlocked(){return (hasUpgrade("-1,1",11))}, 
+        },
+        13: {
+            title: "-1,1,0,0,2",
+            description: "-1,1 effect is ^5.",
+            cost: new Decimal(1e12),
+            unlocked(){return (hasMilestone("d",6))}, 
+        },
+        14: {
+            title: "-1,1,0,0,3",
+            description: "Reduce the 0,0,1,1,0 cost double exponent to 2.",
+            cost: new Decimal(2.5e12),
+            unlocked(){return (hasUpgrade("-1,1",13))}, 
+        },
+        15: {
+            title: "-1,1,0,0,4",
+            description: "Each -1,1 upgrade boosts point gain by 100, and unlock a -1,1 buyable. (warning: inflation ahead)",
+            cost: new Decimal(1e13),
+            unlocked(){return (hasUpgrade("-1,1",14))},
+            effect() {
+                let x = new Decimal(100)
+                return new Decimal(x).pow(player[this.layer].upgrades.length).pow(buyableEffect('-1,1',12))
+            },
+            effectDisplay() { return format(upgradeEffect(this.layer, this.id))+"x" }, // Add formatting to the effect
+        },
+        21: {
+            title: "-1,1,0,1,0",
+            description: "Remove the linear cost exponent part from -1,1,1,0,1's cost.",
+            cost: new Decimal(1e18),
+            unlocked(){return (hasUpgrade("-1,1",15))}, 
+        },
+        22: {
+            title: "-1,1,0,1,1",
+            description: "Remove the base from 0,0,1,0,1, 0,0,1,0,2, and 0,0,1,1,0's cost, and unlock a 1,1 milestone.",
+            cost: new Decimal(2.5e24),
+            unlocked(){return (hasUpgrade("-1,1",21))}, 
+        },
+        23: {
+            title: "-1,1,0,1,2",
+            description: "Cube the -1,1 effect.",
+            cost: new Decimal(1e31),
+            unlocked(){return (hasUpgrade("-1,1",22))}, 
+        },
+        24: {
+            title: "-1,1,0,1,3",
+            description: "(x*2)^2 -> (x*1.5)^2 1,1,1,0,1 cost exponent, and remove the 1,1,1,0,1 cost base.",
+            cost: new Decimal(1e38),
+            unlocked(){return (hasUpgrade("-1,1",23))}, 
+        },
+        25: {
+            title: "-1,1,0,1,4",
+            description: "Unlock the next layer.",
+            cost: new Decimal(1e42),
+            unlocked(){return (hasUpgrade("-1,1",24))}, 
+        },
+    },
+    buyables: {
+        11: {
+            cost(x) { if (hasUpgrade("-1,1",11)) return new Decimal(1).mul(new Decimal(1.1).pow(x.pow(2)))
+                else return new Decimal(1).mul(new Decimal(2).pow(x)).mul(new Decimal(1.1).pow(x.pow(2))) },
+            title: "-1,1,1,0,0",
+            display() { return `x2 0,0 gain.
+            <b>Cost:</b>` + format(this.cost()) + `
+            <b>Amount:</b>` + format(getBuyableAmount(this.layer,this.id)) +`
+            <b>Effect:</b>` + format(this.effect()) + 'x'},
+            canAfford() { return player[this.layer].points.gte(this.cost()) },
+            effect(){
+                let y = new Decimal(2)
+                return new Decimal(y).pow(getBuyableAmount(this.layer,this.id))},
+            buy() {
+                player[this.layer].points = player[this.layer].points.sub(this.cost())
+                setBuyableAmount(this.layer, this.id, getBuyableAmount(this.layer, this.id).add(1))
+            },
+            unlocked(){return (hasUpgrade("0,1",15))}
+        },
+        12: {
+            cost(x) { if (hasUpgrade("-1,0",13)) return new Decimal(1).mul(new Decimal(1.2).pow(x.pow(2)))
+                if (hasUpgrade("-1,1",21)) return new Decimal(1e14).mul(new Decimal(1.2).pow(x.pow(2)))
+                else return new Decimal(1e14).mul(new Decimal(3).pow(x)).mul(new Decimal(1.2).pow(x.pow(2))) },
+            title: "-1,1,1,0,1",
+            display() { return `Exponentiate the -1,1,0,0,4 effect.
+            <b>Cost:</b>` + format(this.cost()) + `
+            <b>Amount:</b>` + format(getBuyableAmount(this.layer,this.id)) +`
+            <b>Effect:</b>` + '^' + format(this.effect())},
+            canAfford() { return player[this.layer].points.gte(this.cost()) },
+            effect(){
+                return getBuyableAmount(this.layer,this.id).add(1)},
+            buy() {
+                player[this.layer].points = player[this.layer].points.sub(this.cost())
+                setBuyableAmount(this.layer, this.id, getBuyableAmount(this.layer, this.id).add(1))
+            },
+            unlocked(){return (hasUpgrade("-1,1",15))}
+        },
+    },
+    milestones: {
+    },
+})
+addLayer("1,-1", {
+    name: "1,-1", // This is optional, only used in a few places, If absent it just uses the layer id.
+    symbol: "1,-1", // This appears on the layer's node. Default is the id with the first letter capitalized
+    branches: ['1,0'],
+    startData() { return {
+        unlocked: true,
+		points: new Decimal(0),
+    }},
+    color: "#D5DFFF",
+    requires: new Decimal(1e10), // Can be a function that takes requirement increases into account
+    resource: "1,-1", // Name of prestige currency
+    baseResource: "points", // Name of resource prestige is based on
+    baseAmount() {return player.points}, // Get the current amount of baseResource
+    type: "normal", // normal: cost to gain currency depends on amount gained. static: cost depends on how much you already have
+    exponent() { // Calculate the multiplier for main currency from bonuses
+        let exponent = new Decimal(0.01)
+        return exponent
+    },
+    gainMult() { // Calculate the multiplier for main currency from bonuses
+        let mult = new Decimal(1)
+        return mult
+    },
+    gainExp() { // Calculate the exponent on main currency from bonuses
+        return new Decimal(1)
+    },
+    directMult() { // Calculate the direct mult after softcap
+        let dmult = new Decimal(1)
+        return dmult
+    },
+    row: 200, // Row the layer is in on the tree (0 is the first row)
+    displayRow: 101,
+    layerShown(){if (hasUpgrade('d',12)) return true},
+    effect() {
+        if (hasUpgrade('1,-1',11)) return player[this.layer].total.add(1).log2().add(1).pow(upgradeEffect('1,-1',11))
+        else return player[this.layer].total.add(1).log2().add(1)
+    },
+    effectDescription() { return 'multiplying Origin gain by ' + format(tmp['1,-1'].effect)},
+    tabFormat: {
+        "Upgrades": {
+            content: ['main-display','prestige-button','upgrades'],
+        },
+        "Buyables": {
+            content: ['main-display','prestige-button','buyables'],
+            unlocked() {return (hasUpgrade("1,0",15))}
+        },
+    },
+    upgrades: {
+        11: {
+            title: "1,-1,0,0,0",
+            description: "1,-1,1,0,0 amount boosts 1,1 gain and exponentiates 1,-1 effect at a reduced rate.",
+            cost: new Decimal(10),
+            tooltip: "x(sqrt(x+1)) 1,1",
+            effect() {
+                return (getBuyableAmount(this.layer,11)).add(1).sqrt()
+            },
+            effectDisplay() { return format(upgradeEffect(this.layer, this.id))+"x" }, // Add formatting to the effect
+        },
+        12: {
+            title: "1,-1,0,0,1",
+            description: "Remove the linear cost exponent part from 1,-1,1,0,0's cost.",
+            cost: new Decimal(1e3),
+            unlocked(){return (hasUpgrade("1,-1",11))}, 
+        },
+    },
+    buyables: {
+        11: {
+            cost(x) { if (hasUpgrade("1,-1",12)) return new Decimal(1).mul(new Decimal(1.1).pow(x.pow(2)))
+                else return new Decimal(1).mul(new Decimal(2).pow(x)).mul(new Decimal(1.1).pow(x.pow(2))) },
+            title: "1,-1,1,0,0",
+            display() { return `x2 1,0 gain.
+            <b>Cost:</b>` + format(this.cost()) + `
+            <b>Amount:</b>` + format(getBuyableAmount(this.layer,this.id)) +`
+            <b>Effect:</b>` + format(this.effect()) + 'x'},
+            canAfford() { return player[this.layer].points.gte(this.cost()) },
+            effect(){
+                let y = new Decimal(2)
+                return new Decimal(y).pow(getBuyableAmount(this.layer,this.id))},
+            buy() {
+                player[this.layer].points = player[this.layer].points.sub(this.cost())
+                setBuyableAmount(this.layer, this.id, getBuyableAmount(this.layer, this.id).add(1))
+            },
+            unlocked(){return (hasUpgrade("1,0",15))}
+        },
+    },
+    milestones: {
+    },
+})
+addLayer("-1,0", {
+    name: "-1,0", // This is optional, only used in a few places, If absent it just uses the layer id.
+    symbol: "-1,0", // This appears on the layer's node. Default is the id with the first letter capitalized
+    branches: ['0,0','-1,1'],
+    startData() { return {
+        unlocked: true,
+		points: new Decimal(0),
+    }},
+    color: "#eaffd4",
+    requires: new Decimal(1e45), // Can be a function that takes requirement increases into account
+    resource: "-1,0", // Name of prestige currency
+    baseResource: "-1,1", // Name of resource prestige is based on
+    baseAmount() {return player['-1,1'].points}, // Get the current amount of baseResource
+    type: "normal", // normal: cost to gain currency depends on amount gained. static: cost depends on how much you already have
+    exponent() { // Calculate the multiplier for main currency from bonuses
+        let exponent = new Decimal(0.2)
+        return exponent
+    },
+    gainMult() { // Calculate the multiplier for main currency from bonuses
+        let mult = new Decimal(1)
+        mult = mult.times(buyableEffect("-1,0", 12))
+        if (hasUpgrade("-1,0", 23)) mult = mult.times(upgradeEffect("-1,0", 23))
+        return mult
+    },
+    gainExp() { // Calculate the exponent on main currency from bonuses
+        return new Decimal(1)
+    },
+    directMult() { // Calculate the direct mult after softcap
+        let dmult = new Decimal(1)
+        return dmult
+    },
+    row: 199, // Row the layer is in on the tree (0 is the first row)
+    displayRow: 100,
+    layerShown(){if (hasUpgrade('-1,1',25)) return true},
+    effect() {
+        return player[this.layer].total.add(1).log2().add(1).pow(buyableEffect('-1,0',11))
+    },
+    effectDescription() { return 'multiplying -1,1 gain by ' + format(tmp['-1,0'].effect)},
+    tabFormat: {
+        "Upgrades": {
+            content: ['main-display','prestige-button','upgrades'],
+        },
+        "Buyables": {
+            content: ['main-display','prestige-button','buyables'],
+            unlocked() {return (hasUpgrade("0,0",15))}
+        },
+    },
+    upgrades: {
+        11: {
+            title: "-1,0,0,0,0",
+            description: "Remove the base from -1,0,1,0,0's cost.",
+            cost: new Decimal(1e11), 
+        },
+        12: {
+            title: "-1,0,0,0,1",
+            description: "Remove the base from -1,0,1,0,1's cost.",
+            cost: new Decimal(1e13), 
+            unlocked(){return (hasUpgrade("-1,0",11))}, 
+        },
+        13: {
+            title: "-1,0,0,0,2",
+            description: "Remove the base from -1,1,1,0,1's cost.",
+            cost: new Decimal(1e24), 
+            unlocked(){return (hasUpgrade("-1,0",12))}, 
+        },
+        14: {
+            title: "-1,0,0,0,3",
+            description: "Every -1,0 upgrade boosts -1,1 gain by 10.",
+            cost: new Decimal(1e27), 
+            unlocked(){return (hasUpgrade("-1,0",13))}, 
+            effect() {
+                let x = new Decimal(10)
+                return new Decimal(x).pow(player[this.layer].upgrades.length)
+            },
+            effectDisplay() { return format(upgradeEffect(this.layer, this.id))+"x" }, // Add formatting to the effect
+        },
+        15: {
+            title: "-1,0,0,0,4",
+            description: "Unlock a -1,0 buyable.",
+            cost: new Decimal(1e30), 
+            unlocked(){return (hasUpgrade("-1,0",14))}, 
+        },
+        21: {
+            title: "-1,0,0,1,0",
+            description: "Remove the linear cost exponent part from -1,0,1,0,0.",
+            cost: new Decimal(1e39), 
+            unlocked(){return (hasUpgrade("-1,0",15))}, 
+        },
+        22: {
+            title: "-1,0,0,1,1",
+            description: "Remove the linear cost exponent part from -1,0,1,0,1.",
+            cost: new Decimal(1e54), 
+            unlocked(){return (hasUpgrade("-1,0",21))}, 
+        },
+        23: {
+            title: "-1,0,0,1,2",
+            description: "Every -1,0 upgrade boosts -1,0 gain by 3.",
+            cost: new Decimal(1e66), 
+            unlocked(){return (hasUpgrade("-1,0",22))}, 
+            effect() {
+                let x = new Decimal(3)
+                return new Decimal(x).pow(player[this.layer].upgrades.length)
+            },
+            effectDisplay() { return format(upgradeEffect(this.layer, this.id))+"x" }, // Add formatting to the effect
+        },
+        24: {
+            title: "-1,0,0,1,3",
+            description: "-1,0 effect^2 boosts point gain, and you can buy 2 of -1,0,1,0,0 and -1,0,1,0,1.",
+            cost: new Decimal(1e83), 
+            unlocked(){return (hasUpgrade("-1,0",23))}, 
+            effect() {
+                return tmp['-1,0'].effect.pow(2)
+            },
+            effectDisplay() { return format(upgradeEffect(this.layer, this.id))+"x" }, // Add formatting to the effect
+        },
+        25: {
+            title: "-1,0,0,1,4",
+            description: "Every -1,0,1,0,2 boosts Origin gain by 5.",
+            cost: new Decimal(1e95), 
+            unlocked(){return (hasUpgrade("-1,0",24))}, 
+            effect() {
+                let x = new Decimal(5)
+                return new Decimal(x).pow(getBuyableAmount('-1,0',13))
+            },
+            effectDisplay() { return format(upgradeEffect(this.layer, this.id))+"x" }, // Add formatting to the effect
+        },
+    },
+    buyables: {
+        11: {
+            cost(x) { if (hasUpgrade("-1,0",21)) return new Decimal(1).mul(new Decimal(1.1).pow(x.pow(2)))
+                if (hasUpgrade("-1,0",11)) return new Decimal(1).mul(new Decimal(2).pow(x)).mul(new Decimal(1.1).pow(x.pow(2)))
+                else return new Decimal(10).mul(new Decimal(2).pow(x)).mul(new Decimal(1.1).pow(x.pow(2))) },
+            title: "-1,0,1,0,0",
+            display() { return `Exponentiate the -1,0 effect.
+            <b>Cost:</b>` + format(this.cost()) + `
+            <b>Amount:</b>` + format(getBuyableAmount(this.layer,this.id)) +`
+            <b>Effect:</b>` + '^' + format(this.effect())},
+            canAfford() { return player[this.layer].points.gte(this.cost()) },
+            effect(){
+                return getBuyableAmount(this.layer,this.id).add(1)},
+            buy() {
+                player[this.layer].points = player[this.layer].points.sub(this.cost())
+                if (hasUpgrade('-1,0',24)) setBuyableAmount(this.layer, this.id, getBuyableAmount(this.layer, this.id).add(2))
+                else setBuyableAmount(this.layer, this.id, getBuyableAmount(this.layer, this.id).add(1))
+            },
+            unlocked(){return (hasUpgrade("0,0",15))}
+        },
+        12: {
+            cost(x) { if (hasUpgrade("-1,0",22)) return new Decimal(1).mul(new Decimal(1.2).pow(x.pow(2)))
+                if (hasUpgrade("-1,0",12)) return new Decimal(1).mul(new Decimal(3).pow(x)).mul(new Decimal(1.2).pow(x.pow(2)))
+                else return new Decimal(1e3).mul(new Decimal(3).pow(x)).mul(new Decimal(1.2).pow(x.pow(2))) },
+            title: "-1,0,1,0,1",
+            display() { return `x3 -1,0 gain.
+            <b>Cost:</b>` + format(this.cost()) + `
+            <b>Amount:</b>` + format(getBuyableAmount(this.layer,this.id)) +`
+            <b>Effect:</b>` + format(this.effect()) + 'x'},
+            canAfford() { return player[this.layer].points.gte(this.cost()) },
+            effect(){
+                let y = new Decimal(3).add(buyableEffect('-1,0',13))
+                return new Decimal(y).pow(getBuyableAmount(this.layer,this.id))},
+            buy() {
+                player[this.layer].points = player[this.layer].points.sub(this.cost())
+                if (hasUpgrade('-1,0',24)) setBuyableAmount(this.layer, this.id, getBuyableAmount(this.layer, this.id).add(2))
+                else setBuyableAmount(this.layer, this.id, getBuyableAmount(this.layer, this.id).add(1))
+            },
+            unlocked(){return (hasUpgrade("0,0",35))}
+        },
+        13: {
+            cost(x) { return new Decimal(1e14).mul(new Decimal(10).pow(x)).mul(new Decimal(1.5).pow(x.pow(2))) },
+            title: "-1,0,1,0,2",
+            display() { return `+0.5 -1,0,1,0,1 effect base.
+            <b>Cost:</b>` + format(this.cost()) + `
+            <b>Amount:</b>` + format(getBuyableAmount(this.layer,this.id)) +`
+            <b>Effect:</b>` + '+' + format(this.effect())},
+            canAfford() { return player[this.layer].points.gte(this.cost()) },
+            effect(){
+                return getBuyableAmount(this.layer,this.id).mul(new Decimal(0.5).add(buyableEffect('-1,0',21)))},
+            buy() {
+                player[this.layer].points = player[this.layer].points.sub(this.cost())
+                setBuyableAmount(this.layer, this.id, getBuyableAmount(this.layer, this.id).add(1))
+            },
+            unlocked(){return (hasUpgrade("-1,1",15))}
+        },
+        21: {
+            cost(x) { return new Decimal(1e30).mul(new Decimal(100).pow(x)).mul(new Decimal(3).pow(x.pow(2))) },
+            title: "-1,0,1,1,0",
+            display() { return `+0.1 -1,0,1,0,2 effect base.
+            <b>Cost:</b>` + format(this.cost()) + `
+            <b>Amount:</b>` + format(getBuyableAmount(this.layer,this.id)) +`
+            <b>Effect:</b>` + '+' + format(this.effect())},
+            canAfford() { return player[this.layer].points.gte(this.cost()) },
+            effect(){
+                return getBuyableAmount(this.layer,this.id).mul(0.1)},
+            buy() {
+                player[this.layer].points = player[this.layer].points.sub(this.cost())
+                setBuyableAmount(this.layer, this.id, getBuyableAmount(this.layer, this.id).add(1))
+            },
+            unlocked(){return (hasUpgrade("-1,0",15))}
+        },
+    },
+    milestones: {
+    },
+})
+addLayer("d", {
+    name: "dots", // This is optional, only used in a few places, If absent it just uses the layer id.
+    symbol: ".", // This appears on the layer's node. Default is the id with the first letter capitalized
+    startData() { return {
+        unlocked: true,
+		points: new Decimal(0),
+    }},
+    color: "#0099FF",
+    requires: new Decimal(1e100), // Can be a function that takes requirement increases into account
+    resource: "dots", // Name of prestige currency
+    baseResource: "Origin", // Name of resource prestige is based on
+    baseAmount() {return player['o'].points}, // Get the current amount of baseResource
+    type: "static", // normal: cost to gain currency depends on amount gained. static: cost depends on how much you already have
+    base() { // Calculate the multiplier for main currency from bonuses
+        let base = new Decimal(1e25)
+        return base
+    },
+    exponent() { // Calculate the multiplier for main currency from bonuses
+        let exponent = new Decimal(2)
+        return exponent
+    },
+    gainMult() { // Calculate the multiplier for main currency from bonuses
+        let mult = new Decimal(1)
+        return mult
+    },
+    gainExp() { // Calculate the exponent on main currency from bonuses
+        return new Decimal(1)
+    },
+    directMult() { // Calculate the direct mult after softcap
+        let dmult = new Decimal(1)
+        return dmult
+    },
+    row: 500, // Row the layer is in on the tree (0 is the first row)
+    displayRow: 'side',
+    layerShown(){if (hasUpgrade('1,1',25)|player[this.layer].total.gte(1)) return true},
+    tabFormat: {
+        "Upgrades": {
+            content: ['main-display','prestige-button','upgrades'],
+        },
+        "Buyables": {
+            content: ['main-display','prestige-button','buyables'],
+        },
+        "Milestones": {
+            content: ['main-display','prestige-button','milestones'],
+        },
+    },
+    upgrades: {
+        11: {
+            title: "Exploring Quadrant II 1",
+            description: "Unlock -1,1. The start will focus on boosting points, 0,0, and 0,1. ",
+            cost: new Decimal(1),
+        },
+        12: {
+            title: "Exploring Quadrant IV 1",
+            description: "Unlock 1,-1. The start will focus on boosting Origin, 1,0, and 1,1.",
+            cost: new Decimal(1),
+        },
+        21: {
+            title: "Dot Boost 1",
+            description: "Every dot+1 boosts point gain by 1,000.",
+            cost: new Decimal(2),
+            branches: [11],
+            unlocked() {return hasUpgrade('d',11)},         
+            effect() {
+                return new Decimal(1e3).pow((player[this.layer].points).add(1))
+            },
+            effectDisplay() { return format(upgradeEffect(this.layer, this.id))+"x" }, // Add formatting to the effect
+        },
+        22: {
+            title: "Dot Boost 2",
+            description: "Every dot+1 boosts 0,1 gain by 100.",
+            cost: new Decimal(2),
+            branches: [11],
+            unlocked() {return (hasUpgrade('d',11))},         
+            effect() {
+                return new Decimal(100).pow((player[this.layer].points).add(1))
+            },
+            effectDisplay() { return format(upgradeEffect(this.layer, this.id))+"x" }, // Add formatting to the effect
+        },
+        23: {
+            title: "Dot Boost 3",
+            description: "Every dot+1 boosts 1,0 gain by 10.",
+            cost: new Decimal(2),
+            branches: [12],
+            unlocked() {return hasUpgrade('d',12)},
+            effect() {
+                return new Decimal(10).pow((player[this.layer].points).add(1))
+            },
+            effectDisplay() { return format(upgradeEffect(this.layer, this.id))+"x" }, // Add formatting to the effect
+        },
+        24: {
+            title: "Upgrade Boost 1",
+            description: "Every dot upgrade boosts Origin gain by 10.",
+            cost: new Decimal(2),
+            branches: [12],
+            unlocked() {return hasUpgrade('d',12)},
+            effect() {
+                return new Decimal(10).pow((player[this.layer].upgrades.length))
+            },
+            effectDisplay() { return format(upgradeEffect(this.layer, this.id))+"x" }, // Add formatting to the effect
+        },
+    },
+    buyables: {
+    },
+    milestones: {
+        1: {
+            requirementDescription: "Requires: 1 dot (1)",
+            effectDescription: "x5 points, 0,0, Origin, and x2 0,1, 1,0, and 1,1. Bulk buy of 0,0,1,0,0 becomes 2.",
+            done() { return player[this.layer].points.gte(1) } 
+        },
+        2: {
+            requirementDescription: "Requires: Both upgrades on the first row (2)",
+            effectDescription: "Every dot multiplies Origin gain by 1,000, and keep the first 10 0,0 upgrades and the first 5 0,1 upgrades.",
+            done() { if (hasUpgrade('d',11) && hasUpgrade('d',12)) return true },
+            unlocked(){return (hasMilestone("d",1))},
+            effect() {
+                return new Decimal(1e3).pow(player[this.layer].points)
+            },
+        },
+        3: {
+            requirementDescription: "Requires: Both previous milestone requirements at the same time (3)",
+            effectDescription: "Passively generate 100% of 0,0 per second, and keep the first 5 1,0 upgrades.",
+            done() { if (player[this.layer].points.gte(1) && hasUpgrade('d',11) && hasUpgrade('d',12)) return true },
+            unlocked(){return (hasMilestone("d",2))},
+        },        
+        4: {
+            requirementDescription: "Requires: 2 dots (4)",
+            effectDescription: "Keep the first 5 1,1 upgrades, and autobuy the first row 0,0 buyables.",
+            done() { if (player[this.layer].points.gte(2)) return true },
+            unlocked(){return (hasMilestone("d",3))},
+        },
+        5: {
+            requirementDescription: "Requires: 1 upgrade in the second row and 1 dot (5)",
+            effectDescription: "Keep the third row 0,0 upgrades, keep the second row 1,1 upgrades, and autobuy 0,0,1,1,0.",
+            done() { if ((hasUpgrade('d',21) | hasUpgrade('d',22) | hasUpgrade('d',23) | hasUpgrade('d',24)) && player[this.layer].points.gte(1)  ) return true },
+            unlocked(){return (hasMilestone("d",4))},
+        },
+        6: {
+            requirementDescription: "Requires: All upgrades in the second row (6)",
+            effectDescription: "Get ready. Keep the second row 0,1 upgrades, keep the second row 1,0 upgrades, keep 0,0 milestones, and unlock more -1,1 upgrades.",
+            done() { if ((hasUpgrade('d',21) && hasUpgrade('d',22) && hasUpgrade('d',23) && hasUpgrade('d',24))) return true },
+            unlocked(){return (hasMilestone("d",4))},
         },
     },
 })
