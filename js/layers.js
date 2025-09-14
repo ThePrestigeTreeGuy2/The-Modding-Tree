@@ -46,6 +46,30 @@ addLayer("o", {
     passiveGeneration() {
         if (hasMilestone("0,0",1)) return 1;
     },
+    automate() {
+        if (hasMilestone("d", 7)) {
+            buyBuyable("o", 11);
+            buyBuyable("o", 12);
+            buyBuyable("o", 13);
+        }
+    },
+    doReset(resettingLayer) {
+    // Stage 1, almost always needed, makes resetting this layer not delete your progress
+    if (layers[resettingLayer].row <= this.row) return;
+
+    // Stage 2, track which specific subfeatures you want to keep, e.g. Upgrade 11, Challenge 32, Buyable 12
+    let keptUpgrades = []
+    if (hasMilestone('d', 5)) keptUpgrades.push(11,12,13,14,15,21,22,23,24,25)
+
+    // Stage 3, track which main features you want to keep - all upgrades, total points, specific toggles, etc.
+    let keep = [];
+
+    // Stage 4, do the actual data reset
+    layerDataReset(this.layer, keep);
+
+    // Stage 5, add back in the specific subfeatures you saved earlier
+    player[this.layer].upgrades.push(...keptUpgrades)
+    },
     tabFormat: {
         "Upgrades": {
             content: ['main-display','upgrades'],
@@ -239,15 +263,19 @@ addLayer("0,0", {
     displayRow: 100,
     layerShown(){return true},
     passiveGeneration() {
-        if (hasMilestone("d",3)) return 1;
+        if (hasUpgrade("1,1",24)|hasMilestone("d",3)) return 1;
     },
     automate() {
-        if (hasMilestone("d", 4)) {
+        if (hasUpgrade("1,1", 23)) {
             buyBuyable("0,0", 11);
             buyBuyable("0,0", 12);
             buyBuyable("0,0", 13);
+            buyBuyable("0,0", 21);
         }
-        if (hasMilestone("d", 5)) {
+        if (hasMilestone("d", 2)) {
+            buyBuyable("0,0", 11);
+            buyBuyable("0,0", 12);
+            buyBuyable("0,0", 13);
             buyBuyable("0,0", 21);
         }
     },
@@ -257,13 +285,14 @@ addLayer("0,0", {
 
     // Stage 2, track which specific subfeatures you want to keep, e.g. Upgrade 11, Challenge 32, Buyable 12
     let keptUpgrades = []
+    if (hasUpgrade('1,0', 11)) keptUpgrades.push(11,12,13,14,15,21,22,23,24,25)
     if (hasMilestone('1,1', 1)) keptUpgrades.push(11,12,13,14,15,21,22,23,24,25)
-    if (hasMilestone('d', 2)) keptUpgrades.push(11,12,13,14,15,21,22,23,24,25)
-    if (hasMilestone('d', 5)) keptUpgrades.push(31,32,33,34,35)
+    if (hasMilestone('d', 1)) keptUpgrades.push(11,12,13,14,15,21,22,23,24,25)
+    if (hasMilestone('d', 4)) keptUpgrades.push(31,32,33,34,35)
 
     // Stage 3, track which main features you want to keep - all upgrades, total points, specific toggles, etc.
     let keep = [];
-    if (hasMilestone('d', 6)) keep.push("milestones");
+    if (hasMilestone('d', 4)) keep.push("milestones");
 
     // Stage 4, do the actual data reset
     layerDataReset(this.layer, keep);
@@ -273,18 +302,18 @@ addLayer("0,0", {
     },
     tabFormat: {
         "Upgrades": {
-            content() {if (hasMilestone("d",3)) return ['main-display','upgrades']
+            content() {if (hasUpgrade("1,1",24)|hasMilestone("d",3)) return ['main-display','upgrades']
                 else return ['main-display','prestige-button','upgrades']
             },
         },
         "Buyables": {
-            content() {if (hasMilestone("d",3)) return ['main-display','buyables']
+            content() {if (hasUpgrade("1,1",24)|hasMilestone("d",3)) return ['main-display','buyables']
                 else return ['main-display','prestige-button','buyables']
             },
             unlocked(){return (hasUpgrade("0,0",15))},
         },
         "Milestones": {
-            content() {if (hasMilestone("d",3)) return ['main-display','milestones']
+            content() {if (hasUpgrade("1,1",24)|hasMilestone("d",3)) return ['main-display','milestones']
                 else return ['main-display','prestige-button','milestones']
             },
             unlocked(){return (hasUpgrade("0,1",11))},
@@ -554,14 +583,24 @@ addLayer("0,1", {
     row: 201, // Row the layer is in on the tree (0 is the first row)
     displayRow: 99,
     layerShown(){if (hasUpgrade('0,0',25)|player[this.layer].total.gte(1)) return true},
+    passiveGeneration() {
+        if (hasMilestone("d",4)) return 1;
+    },
+    automate() {
+        if (hasMilestone("d", 3)) {
+            buyBuyable(this.layer, 11);
+            buyBuyable(this.layer, 12);
+        }
+    },
     doReset(resettingLayer) {
     // Stage 1, almost always needed, makes resetting this layer not delete your progress
     if (layers[resettingLayer].row <= this.row) return;
 
     // Stage 2, track which specific subfeatures you want to keep, e.g. Upgrade 11, Challenge 32, Buyable 12
     let keptUpgrades = []
-    if (hasMilestone('d', 2)) keptUpgrades.push(11,12,13,14,15)
-    if (hasMilestone('d', 6)) keptUpgrades.push(21,22,23,24,25)
+    if (hasUpgrade('1,1', 21)) keptUpgrades.push(11,12,13,14,15)
+    if (hasMilestone('d', 1)) keptUpgrades.push(11,12,13,14,15)
+    if (hasMilestone('d', 5)) keptUpgrades.push(21,22,23,24,25)
 
     // Stage 3, track which main features you want to keep - all upgrades, total points, specific toggles, etc.
     let keep = [];
@@ -580,10 +619,14 @@ addLayer("0,1", {
     effectDescription() { return 'multiplying 0,0 gain by ' + format(tmp['0,1'].effect)},
     tabFormat: {
         "Upgrades": {
-            content: ['main-display','prestige-button','upgrades'],
+            content() {if (hasMilestone("d",7)) return ['main-display','upgrades']
+                else return ['main-display','prestige-button','upgrades']
+            },
         },
         "Buyables": {
-            content: ['main-display','prestige-button','buyables'],
+            content() {if (hasMilestone("d",7)) return ['main-display','buyables']
+                else return ['main-display','prestige-button','buyables']
+            },
             unlocked(){return (hasUpgrade("0,1",15))},
         },
     },
@@ -758,6 +801,15 @@ addLayer("1,0", {
     row: 201, // Row the layer is in on the tree (0 is the first row)
     displayRow: 100,
     layerShown(){return hasUpgrade('0,1',15)},
+    passiveGeneration() {
+        if (hasMilestone("d",4)) return 1;
+    },
+    automate() {
+        if (hasMilestone("d", 3)) {
+            buyBuyable(this.layer, 11);
+            buyBuyable(this.layer, 12);
+        }
+    },
     effect() {
         return player[this.layer].total.add(1).log2().add(1).pow(2)
     },
@@ -768,8 +820,9 @@ addLayer("1,0", {
 
     // Stage 2, track which specific subfeatures you want to keep, e.g. Upgrade 11, Challenge 32, Buyable 12
     let keptUpgrades = []
-    if (hasMilestone('d', 3)) keptUpgrades.push(11,12,13,14,15)
-    if (hasMilestone('d', 6)) keptUpgrades.push(21,22,23,24,25)
+    if (hasUpgrade('1,1', 22)) keptUpgrades.push(11,12,13,14,15)
+    if (hasMilestone('d', 2)) keptUpgrades.push(11,12,13,14,15)
+    if (hasMilestone('d', 5)) keptUpgrades.push(21,22,23,24,25)
 
     // Stage 3, track which main features you want to keep - all upgrades, total points, specific toggles, etc.
     let keep = [];
@@ -783,17 +836,21 @@ addLayer("1,0", {
     },
     tabFormat: {
         "Upgrades": {
-            content: ['main-display','prestige-button','upgrades'],
+            content() {if (hasMilestone("d",7)) return ['main-display','upgrades']
+                else return ['main-display','prestige-button','upgrades']
+            },
         },
         "Buyables": {
-            content: ['main-display','prestige-button','buyables'],
+            content() {if (hasMilestone("d",7)) return ['main-display','buyables']
+                else return ['main-display','prestige-button','buyables']
+            },
             unlocked(){return (hasUpgrade("1,0",15))},
         },
     },
     upgrades: {
         11: {
             title: "1,0,0,0,0",
-            description: "0,0,1,0,0 double exponent is lowered to 1.4, and unlock a 0,0 milestone.",
+            description: "0,0,1,0,0 double exponent is lowered to 1.4, unlock a 0,0 milestone, and keep the first 10 0,0 upgrades.",
             cost: new Decimal(2),
         },
         12: {
@@ -931,6 +988,9 @@ addLayer("1,1", {
     row: 202, // Row the layer is in on the tree (0 is the first row)
     displayRow: 99,
     layerShown(){if (hasUpgrade('1,0',15)|player[this.layer].total.gte(1)) return true},
+    passiveGeneration() {
+        if (hasMilestone("d",7)) return 1;
+    },
     effect() {
         if (hasUpgrade('1,1',22)) return player[this.layer].total.add(1).log2().add(1).pow(4)
         else return player[this.layer].total.add(1).log2().add(1).pow(2)
@@ -942,8 +1002,8 @@ addLayer("1,1", {
 
     // Stage 2, track which specific subfeatures you want to keep, e.g. Upgrade 11, Challenge 32, Buyable 12
     let keptUpgrades = []
-    if (hasMilestone('d', 4)) keptUpgrades.push(11,12,13,14,15)
-    if (hasMilestone('d', 5)) keptUpgrades.push(21,22,23,24,25)
+    if (hasMilestone('d', 3)) keptUpgrades.push(11,12,13,14,15)
+    if (hasMilestone('d', 4)) keptUpgrades.push(21,22,23,24,25)
 
     // Stage 3, track which main features you want to keep - all upgrades, total points, specific toggles, etc.
     let keep = [];
@@ -957,14 +1017,20 @@ addLayer("1,1", {
     },
     tabFormat: {
         "Upgrades": {
-            content: ['main-display','prestige-button','upgrades'],
+            content() {if (hasMilestone("d",7)) return ['main-display','upgrades']
+                else return ['main-display','prestige-button','upgrades']
+            },
         },
         "Buyables": {
-            content: ['main-display','prestige-button','buyables'],
+            content() {if (hasMilestone("d",7)) return ['main-display','buyables']
+                else return ['main-display','prestige-button','buyables']
+            },
             unlocked(){return (hasMilestone("1,1",1))},
         },
         "Milestones": {
-            content: ['main-display','prestige-button','milestones'],
+            content() {if (hasMilestone("d",7)) return ['main-display','milestones']
+                else return ['main-display','prestige-button','milestones']
+            },
         },
     },
     upgrades: {
@@ -995,7 +1061,7 @@ addLayer("1,1", {
         },
         21: {
             title: "1,1,0,1,0",
-            description: "Every 1,1 upgrade multiplies point and Origin gain by 2, and unlock more 0,1 upgrades.",
+            description: "Every 1,1 upgrade multiplies point and Origin gain by 2, keep the first 5 0,1 upgrades, and unlock more 0,1 upgrades.",
             cost: new Decimal(25),
             unlocked(){return (hasMilestone("1,1",1))},
             effect() {
@@ -1007,19 +1073,19 @@ addLayer("1,1", {
         },
         22: {
             title: "1,1,0,1,2",
-            description: "Unlock more 1,0 upgrades.",
+            description: "Unlock more 1,0 upgrades, and keep the first 5 1,0 upgrades.",
             cost: new Decimal(170),
             unlocked(){return (hasUpgrade("1,1",21))},
         },
         23: {
             title: "1,1,0,1,3",
-            description: "Last 3 upgrades until new reset layer! Cube 1,1,1,0,0 effect.",
+            description: "Last 3 upgrades until new reset layer! Cube 1,1,1,0,0 effect, and autobuy the first 4 0,0 buyables.",
             cost: new Decimal(45000),
             unlocked(){return (hasUpgrade("1,1",22))},
         },
         24: {
             title: "1,1,0,1,4",
-            description: "So close! Cube 0,1,1,0,0 effect.",
+            description: "So close! Cube 0,1,1,0,0 effect, and passively generate 100% of 0,0 per second.",
             cost: new Decimal(110000),
             unlocked(){return (hasUpgrade("1,1",23))},
         },
@@ -1087,6 +1153,8 @@ addLayer("-1,1", {
         let mult = new Decimal(1)
         mult = mult.times(tmp['-1,0'].effect)
         if (hasUpgrade('-1,0',14)) mult = mult.times(upgradeEffect('-1,0',14))
+        if (hasUpgrade("d", 31)) mult = mult.times(upgradeEffect("d", 31))
+        if (hasUpgrade("d", 32)) mult = mult.times(buyableEffect("-1,1", 11).sqrt())
         return mult
     },
     gainExp() { // Calculate the exponent on main currency from bonuses
@@ -1099,6 +1167,9 @@ addLayer("-1,1", {
     row: 200, // Row the layer is in on the tree (0 is the first row)
     displayRow: 99,
     layerShown(){if (hasUpgrade('d',11)) return true},
+    passiveGeneration() {
+        if (hasUpgrade("-1,1",15)) return 1;
+    },
     effect() {
         if (hasUpgrade('-1,1',23)) return player[this.layer].total.add(1).log2().add(1).pow(15)
         if (hasUpgrade('-1,1',13)) return player[this.layer].total.add(1).log2().add(1).pow(5)
@@ -1112,6 +1183,19 @@ addLayer("-1,1", {
         "Buyables": {
             content: ['main-display','prestige-button','buyables'],
             unlocked() {return (hasUpgrade("0,1",15))}
+        },
+    },
+    tabFormat: {
+        "Upgrades": {
+            content() {if (hasUpgrade("-1,0",11)) return ['main-display','upgrades']
+                else return ['main-display','prestige-button','upgrades']
+            },
+        },
+        "Buyables": {
+            content() {if (hasUpgrade("-1,0",11)) return ['main-display','buyables']
+                else return ['main-display','prestige-button','buyables']
+            },
+            unlocked(){return (hasUpgrade("0,1",15))},
         },
     },
     upgrades: {
@@ -1140,7 +1224,7 @@ addLayer("-1,1", {
         },
         15: {
             title: "-1,1,0,0,4",
-            description: "Each -1,1 upgrade boosts point gain by 100, and unlock a -1,1 buyable. (warning: inflation ahead)",
+            description: "Each -1,1 upgrade boosts point gain by 100, unlock a -1,1 buyable, and passively generate 100% of -1,1 per second (warning: inflation ahead)",
             cost: new Decimal(1e13),
             unlocked(){return (hasUpgrade("-1,1",14))},
             effect() {
@@ -1330,6 +1414,7 @@ addLayer("-1,0", {
         let mult = new Decimal(1)
         mult = mult.times(buyableEffect("-1,0", 12))
         if (hasUpgrade("-1,0", 23)) mult = mult.times(upgradeEffect("-1,0", 23))
+        if (hasUpgrade("d", 31)) mult = mult.times(upgradeEffect("d", 31))
         return mult
     },
     gainExp() { // Calculate the exponent on main currency from bonuses
@@ -1342,6 +1427,9 @@ addLayer("-1,0", {
     row: 199, // Row the layer is in on the tree (0 is the first row)
     displayRow: 100,
     layerShown(){if (hasUpgrade('-1,1',25)) return true},
+    passiveGeneration() {
+        if (hasUpgrade("-1,0",11)) return 1;
+    },
     effect() {
         return player[this.layer].total.add(1).log2().add(1).pow(buyableEffect('-1,0',11))
     },
@@ -1358,7 +1446,7 @@ addLayer("-1,0", {
     upgrades: {
         11: {
             title: "-1,0,0,0,0",
-            description: "Remove the base from -1,0,1,0,0's cost.",
+            description: "Remove the base from -1,0,1,0,0's cost, and passively generate 100% of -1,0 (disables -1,1 ability to prestige)",
             cost: new Decimal(1e11), 
         },
         12: {
@@ -1612,18 +1700,37 @@ addLayer("d", {
             },
             effectDisplay() { return format(upgradeEffect(this.layer, this.id))+"x" }, // Add formatting to the effect
         },
+        31: {
+            title: "Dot Boost 4",
+            description: "Every dot boosts -1,1 and -1,0 gain by 10.",
+            cost: new Decimal(3),
+            branches: [21,22],
+            unlocked() {return hasMilestone('d',6)},
+            effect() {
+                return new Decimal(10).pow(player[this.layer].points)
+            },
+            effectDisplay() { return format(upgradeEffect(this.layer, this.id))+"x" }, // Add formatting to the effect
+        },
+        32: {
+            title: "Buyable Boost 1",
+            description: "-1,1,1,0,0 effect boosts -1,1 gain at a reduced rate.",
+            cost: new Decimal(3),
+            branches: [23,24],
+            unlocked() {return hasMilestone('d',6)},
+            tooltip: "xsqrt(-1,1,1,0,0 effect) -1,1 gain",
+        },
     },
     buyables: {
     },
     milestones: {
         1: {
             requirementDescription: "Requires: 1 dot (1)",
-            effectDescription: "x5 points, 0,0, Origin, and x2 0,1, 1,0, and 1,1. Bulk buy of 0,0,1,0,0 becomes 2.",
+            effectDescription: "x5 points, 0,0, Origin, and x2 0,1, 1,0, and 1,1. Bulk buy of 0,0,1,0,0 becomes 2, and keep the first 10 0,0 upgrades and the first 5 0,1 upgrades.",
             done() { return player[this.layer].points.gte(1) } 
         },
         2: {
             requirementDescription: "Requires: Both upgrades on the first row (2)",
-            effectDescription: "Every dot multiplies Origin gain by 1,000, and keep the first 10 0,0 upgrades and the first 5 0,1 upgrades.",
+            effectDescription: "Every dot multiplies Origin gain by 1,000, keep the first 5 1,0 upgrades, and autobuy the first four 0,0 buyables.",
             done() { if (hasUpgrade('d',11) && hasUpgrade('d',12)) return true },
             unlocked(){return (hasMilestone("d",1))},
             effect() {
@@ -1632,27 +1739,33 @@ addLayer("d", {
         },
         3: {
             requirementDescription: "Requires: Both previous milestone requirements at the same time (3)",
-            effectDescription: "Passively generate 100% of 0,0 per second, and keep the first 5 1,0 upgrades.",
+            effectDescription: "Passively generate 100% of 0,0 per second, keep the first 5 1,1 upgrades, and autobuy the first 2 0,1 and 1,0 buyables.",
             done() { if (player[this.layer].points.gte(1) && hasUpgrade('d',11) && hasUpgrade('d',12)) return true },
             unlocked(){return (hasMilestone("d",2))},
         },        
         4: {
             requirementDescription: "Requires: 2 dots (4)",
-            effectDescription: "Keep the first 5 1,1 upgrades, and autobuy the first row 0,0 buyables.",
+            effectDescription: "Keep the third row 0,0 upgrades, keep the second row 1,1 upgrades, keep 0,0 milestones, and passively generate 100% of 0,1 and 1,0 per second.",
             done() { if (player[this.layer].points.gte(2)) return true },
             unlocked(){return (hasMilestone("d",3))},
         },
         5: {
             requirementDescription: "Requires: 1 upgrade in the second row and 1 dot (5)",
-            effectDescription: "Keep the third row 0,0 upgrades, keep the second row 1,1 upgrades, and autobuy 0,0,1,1,0.",
+            effectDescription: "Keep the first and second row Origin upgrades, keep the second row 0,1 upgrades, and keep the second row 1,0 upgrades.",
             done() { if ((hasUpgrade('d',21) | hasUpgrade('d',22) | hasUpgrade('d',23) | hasUpgrade('d',24)) && player[this.layer].points.gte(1)  ) return true },
             unlocked(){return (hasMilestone("d",4))},
         },
         6: {
             requirementDescription: "Requires: All upgrades in the second row (6)",
-            effectDescription: "Get ready. Keep the second row 0,1 upgrades, keep the second row 1,0 upgrades, keep 0,0 milestones, and unlock more -1,1 upgrades.",
+            effectDescription: "Unlock more -1,1 upgrades.",
             done() { if ((hasUpgrade('d',21) && hasUpgrade('d',22) && hasUpgrade('d',23) && hasUpgrade('d',24))) return true },
-            unlocked(){return (hasMilestone("d",4))},
+            unlocked(){return (hasMilestone("d",5))},
+        },
+        7: {
+            requirementDescription: "Requires: 3 dots (7)",
+            effectDescription: "Autobuy the first three Origin buyables, and passively generate 100% of 1,1 per second.",
+            done() { if (player[this.layer].points.gte(3)) return true },
+            unlocked(){return (hasMilestone("d",6))},
         },
     },
 })

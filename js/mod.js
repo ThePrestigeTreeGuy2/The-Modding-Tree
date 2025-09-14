@@ -13,19 +13,23 @@ let modInfo = {
 
 // Set your version in num and name
 let VERSION = {
-	num: "0.3",
-	name: "Expansion Part 1",
+	num: "0.3.1",
+	name: "obligatory qol update",
 }
 
 let changelog = `<h1>Changelog:</h1><br>
-	<h3>v0.3</h3><br>
+	<h3>v0.3.1: obligatory qol update</h3><br>
+		- Added (barely) more content<br>
+		- Drastic QoL changes<br>
+		- Endgame: Both dot upgrades on the third row<br>
+	<h3>v0.3: Expansion Part 1</h3><br>
 		- Added more content<br>
 		- Added 4 layers<br>
 		- Endgame: 3 dots<br>
-	<h3>v0.2</h3><br>
+	<h3>v0.2: The power of 4 (5) layers</h3><br>
 		- Added more content<br>
 		- Endgame: 1e100 origin<br>
-	<h3>v0.1</h3><br>
+	<h3>v0.1: Beginning of a long journey</h3><br>
 		- Release<br>
 		- Added 4 layers<br>
 		- Endgame: 1 1,1<br>
